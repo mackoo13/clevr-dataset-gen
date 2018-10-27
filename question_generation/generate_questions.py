@@ -45,14 +45,14 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='../output/CLEVR_scenes.json',
+parser.add_argument('--input_scene_file', default='C:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
-parser.add_argument('--metadata_file', default='metadata.json',
+parser.add_argument('--metadata_file', default='metadata_pl.json',
     help="JSON file containing metadata about functions")
-parser.add_argument('--synonyms_json', default='synonyms.json',
+parser.add_argument('--synonyms_json', default='synonyms_pl.json',
     help="JSON file defining synonyms for parameter values")
-parser.add_argument('--template_dir', default='CLEVR_1.0_templates',
+parser.add_argument('--template_dir', default='CLEVR_1.0_templates_pl',
     help="Directory containing JSON templates for questions")
 
 # Output
@@ -64,7 +64,7 @@ parser.add_argument('--output_questions_file',
 parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=0, type=int,
+parser.add_argument('--num_scenes', default=1, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
@@ -240,7 +240,7 @@ def other_heuristic(text, param_vals):
 
 
 def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
-                              synonyms, max_instances=None, verbose=False):
+                              synonyms, grammar, max_instances=None, verbose=False):
 
   param_name_to_type = {p['name']: p['type'] for p in template['params']} 
 
@@ -487,7 +487,8 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     for name, val in state['vals'].items():
       if val in synonyms:
         val = random.choice(synonyms[val])
-      text = text.replace(name, val)
+      print(name, val, text)
+      text = re.sub(r'<%s:(.*?)>' % name[1:-1], lambda q: declinate(val, q.group(), grammar), text)
       text = ' '.join(text.split())
     text = replace_optionals(text)
     text = ' '.join(text.split())
@@ -496,6 +497,23 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
 
   return text_questions, structured_questions, answers
 
+  
+def declinate(val, name, grammar):
+  name = name[1:-1].split(':')[-1]
+  print('\tDeclinate:', val, name)
+  if val == '':
+    return ''
+  
+  if val in grammar and name in grammar[val]:
+    ending = grammar[val][name]
+  elif name in grammar['regular_endings']:
+    return val + grammar['regular_endings'][name]
+  else:
+    return val + ':' + name
+	
+  ending_letters = ending.replace('-', '')
+  ending_offset = len(ending) - len(ending_letters)
+  return (val[:-ending_offset] if ending_offset > 0  else val) + ending_letters
 
 
 def replace_optionals(s):
@@ -597,6 +615,10 @@ def main(args):
   with open(args.synonyms_json, 'r') as f:
     synonyms = json.load(f)
 
+  # Read grammar file
+  with open('grammar_pl.json', 'r') as f:
+    grammar = json.load(f)
+
   questions = []
   scene_count = 0
   for i, scene in enumerate(all_scenes):
@@ -628,6 +650,7 @@ def main(args):
                       metadata,
                       template_answer_counts[(fn, idx)],
                       synonyms,
+                      grammar,
                       max_instances=args.instances_per_template,
                       verbose=False)
       if args.time_dfs and args.verbose:
@@ -677,12 +700,13 @@ def main(args):
       else:
         f['value_inputs'] = []
 
-  with open(args.output_questions_file, 'w') as f:
+  with open(args.output_questions_file, 'w+') as f:
     print('Writing output to %s' % args.output_questions_file)
-    json.dump({
-        'info': scene_info,
-        'questions': questions,
-      }, f)
+    print(questions[0]['question'])
+    #json.dump({
+    #    'info': scene_info,
+    #    'questions': questions,
+    #  }, f)
 
 
 if __name__ == '__main__':
