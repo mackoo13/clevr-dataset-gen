@@ -1,0 +1,34 @@
+{
+  "rzecz": {
+	"b,sg": "y",
+	"b,pl": "y"
+  },
+  "przedmiot": {
+	"b,sg": "u",
+	"b,pl": "ow"
+  },
+  "kostka": {
+	"b,sg": "-i",
+	"b,pl": "--ek"
+  },
+  "kula": {
+	"b,sg": "-i",
+	"b,pl": "-"
+  },
+  "kulka": {
+	"b,sg": "-i",
+	"b,pl": "--ek"
+  },
+  "szescian": {
+	"b,sg": "u",
+	"b,pl": "ow"
+  },
+  "walec": {
+	"b,sg": "--ca",
+	"b,pl": "--cow"
+  },
+  "regular_endings": {
+	"b,sg": "-ego",
+	"b,pl": "ch"
+  }
+}
