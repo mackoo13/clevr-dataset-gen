@@ -484,12 +484,35 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     structured_questions.append(state['nodes'])
     answers.append(state['answer'])
     text = random.choice(template['text'])
-    for name, val in state['vals'].items():
+	
+    vals = list(state['vals'].items())
+    forms = {}
+    print(vals)
+	
+    while len(vals) > 0:
+      print(text)
+      name, val = vals.pop(0)
+      print('\t', val, name)
+      print('\t', forms)
+	  
+      #print(text)
+      form = re.search(r'<%s:?([^:]*?)>' % name[1:-1], text).group(1)
+      if not is_determined(form, forms):
+        print('skipping', val, form)
+        vals.append((name, val))
+        continue
+	
       if val in synonyms:
         val = random.choice(synonyms[val])
-      print(name, val, text)
-      text = re.sub(r'<%s:(.*?)>' % name[1:-1], lambda q: declinate(val, q.group(), grammar), text)
+
+      text = re.sub(r'<%s:?(.*?)>' % name[1:-1], lambda q: declinate(val, q.group(), grammar, forms), text)
+	  
+      if val in grammar['dependent_forms']:
+        form = merge_form(form, grammar['dependent_forms'][val], forms)
+
+      forms[name[1:-1]] = form
       text = ' '.join(text.split())
+	  
     text = replace_optionals(text)
     text = ' '.join(text.split())
     text = other_heuristic(text, state['vals'])
@@ -498,22 +521,66 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
   return text_questions, structured_questions, answers
 
   
-def declinate(val, name, grammar):
-  name = name[1:-1].split(':')[-1]
-  print('\tDeclinate:', val, name)
+def declinate(val, name, grammar, forms):
+  name = name[1:-1].split(':')
+  name = '' if len(name) == 1 else name[-1]
+  name = split_form(name)
+  name = [(forms[q] if q in forms else q) for q in name]
+  name = ','.join(name)
+  
   if val == '':
     return ''
   
   if val in grammar and name in grammar[val]:
     ending = grammar[val][name]
   elif name in grammar['regular_endings']:
-    return val + grammar['regular_endings'][name]
+    ending = grammar['regular_endings'][name]
+  elif is_empty(name):
+    return val
   else:
     return val + ':' + name
 	
   ending_letters = ending.replace('-', '')
   ending_offset = len(ending) - len(ending_letters)
   return (val[:-ending_offset] if ending_offset > 0  else val) + ending_letters
+  
+  
+def merge_form(f1, f2, forms):
+  print('merge', f1, f2)
+  
+  if f1 in forms:
+    f1 = forms[f1]
+  f1 = split_form(f1)
+  
+  if f2 in forms:
+    f2 = forms[f2]
+  f2 = split_form(f2)
+  
+  if len(f1) < 3:
+    return ','.join(f2)
+	
+  if len(f2) < 3:
+    return ','.join(f1)
+  
+  c1, n1, g1 = f1
+  c2, n2, g2 = f2
+  c = c1 if c2 == '' else c2
+  n = n1 if n2 == '' else n2
+  g = g1 if g2 == '' else g2
+  return c + ',' + n + ',' + g
+  
+  
+def is_determined(form, forms):
+  form = split_form(form)
+  return all([f.islower() or f == '' or f in forms for f in form])
+  
+  
+def is_empty(form):
+  return form in ('', ',,')
+  
+  
+def split_form(form):
+  return form.split(',')
 
 
 def replace_optionals(s):
