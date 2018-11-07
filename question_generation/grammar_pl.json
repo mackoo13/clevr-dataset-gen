@@ -1,34 +1,57 @@
 {
   "rzecz": {
-	"b,sg": "y",
-	"b,pl": "y"
+	"d,sg,": "y",
+	"d,pl,": "y",
+	"n,sg,": "a"
   },
   "przedmiot": {
-	"b,sg": "u",
-	"b,pl": "ow"
+	"d,sg,": "u",
+	"d,pl,": "ow",
+	"n,sg,": "em"
   },
   "kostka": {
-	"b,sg": "-i",
-	"b,pl": "--ek"
+	"d,sg,": "-i",
+	"d,pl,": "--ek",
+	"n,sg,": "-a"
   },
   "kula": {
-	"b,sg": "-i",
-	"b,pl": "-"
+	"d,sg,": "-i",
+	"d,pl,": "-",
+	"n,sg,": "-a"
   },
   "kulka": {
-	"b,sg": "-i",
-	"b,pl": "--ek"
+	"d,sg,": "-i",
+	"d,pl,": "--ek",
+	"n,sg,": "-a"
   },
   "szescian": {
-	"b,sg": "u",
-	"b,pl": "ow"
+	"d,sg,": "u",
+	"d,pl,": "ow",
+	"n,sg,": "em"
   },
   "walec": {
-	"b,sg": "--ca",
-	"b,pl": "--cow"
+	"d,sg,": "--ca",
+	"d,pl,": "--cow",
+	"n,sg,": "--cem"
   },
   "regular_endings": {
-	"b,sg": "-ego",
-	"b,pl": "ch"
+	"d,sg,m": "-ego",
+	"d,sg,f": "-ej",
+	"d,pl,": "ch",
+	"n,sg,m": "m",
+	"n,sg,f": "-a"
+  },
+  "dependent_forms": {
+	"kostka": ",,f",
+	"kula": ",,f",
+	"kulka": ",,f",
+	"przedmiot": ",,m",
+	"rzecz": ",,f",
+	"szescian": ",,m",
+	"walec": ",,m",
+    "z przodu": "d,sg,",
+    "za": "n,sg,",
+    "po prawej od": "d,sg,",
+    "po lewej od": "d,sg,"
   }
 }

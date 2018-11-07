@@ -18,7 +18,7 @@
   "left": ["po lewej od"],
   "right": ["po prawej od"],
   "behind": ["za"],
-  "front": ["przed", "z przodu"],
+  "front": ["z przodu"],
   "above": ["nad"],
   "below": ["pod"]
 }

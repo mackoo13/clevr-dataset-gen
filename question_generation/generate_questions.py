@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='C:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -64,7 +64,7 @@ parser.add_argument('--output_questions_file',
 parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=1, type=int,
+parser.add_argument('--num_scenes', default=10, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
@@ -74,7 +74,7 @@ parser.add_argument('--num_scenes', default=1, type=int,
 parser.add_argument('--templates_per_image', default=10, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
-parser.add_argument('--instances_per_template', default=1, type=int,
+parser.add_argument('--instances_per_template', default=10, type=int,
     help="The number of times each template should be instantiated on an image")
 
 # Misc
@@ -484,21 +484,23 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     structured_questions.append(state['nodes'])
     answers.append(state['answer'])
     text = random.choice(template['text'])
-	
+
     vals = list(state['vals'].items())
     forms = {}
-    print(vals)
+    if verbose:
+      print(vals)
 	
     while len(vals) > 0:
-      print(text)
+      if verbose:
+        print(text)
+        print('\t', val, name)
+        print('\t', forms)
+		
       name, val = vals.pop(0)
-      print('\t', val, name)
-      print('\t', forms)
 	  
       #print(text)
       form = re.search(r'<%s:?([^:]*?)>' % name[1:-1], text).group(1)
       if not is_determined(form, forms):
-        print('skipping', val, form)
         vals.append((name, val))
         continue
 	
@@ -546,8 +548,6 @@ def declinate(val, name, grammar, forms):
   
   
 def merge_form(f1, f2, forms):
-  print('merge', f1, f2)
-  
   if f1 in forms:
     f1 = forms[f1]
   f1 = split_form(f1)
@@ -769,11 +769,11 @@ def main(args):
 
   with open(args.output_questions_file, 'w+') as f:
     print('Writing output to %s' % args.output_questions_file)
-    print(questions[0]['question'])
-    #json.dump({
-    #    'info': scene_info,
-    #    'questions': questions,
-    #  }, f)
+    print('\n'.join([q['question'] for q in questions]))
+    json.dump({
+        'info': scene_info,
+        'questions': questions,
+      }, f)
 
 
 if __name__ == '__main__':
