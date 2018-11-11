@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='D:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -71,7 +71,7 @@ parser.add_argument('--num_scenes', default=10, type=int,
 
 # Control the number of questions per image; we will attempt to generate
 # templates_per_image * instances_per_template questions per image.
-parser.add_argument('--templates_per_image', default=10, type=int,
+parser.add_argument('--templates_per_image', default=1, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
 parser.add_argument('--instances_per_template', default=10, type=int,
@@ -480,41 +480,53 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
 
   # Actually instantiate the template with the solutions we've found
   text_questions, structured_questions, answers = [], [], []
+
   for state in final_states:
     structured_questions.append(state['nodes'])
     answers.append(state['answer'])
     text = random.choice(template['text'])
 
-    vals = list(state['vals'].items())
+    vals_en = list(state['vals'].items())
+    vals = []
     forms = {}
-    if verbose:
-      print(vals)
-	
+
+    tokens = re.findall(r'<(.*?):?([^:]*?)>', text)
+    for token in tokens:
+      name, word = token
+      forms[name] = Form(word)
+
+    for val in vals_en:
+      name = val[0][1:-1]
+      word = val[1]
+
+      if word == '':
+        vals.append((name, ''))
+        continue
+
+      if word not in synonyms:
+        raise Exception(word + ' not found in synonyms!')
+
+      word = random.choice(synonyms[word])
+      vals.append((name, word))
+
     while len(vals) > 0:
+      name, val = vals.pop(0)
+
       if verbose:
         print(text)
         print('\t', val, name)
         print('\t', forms)
-		
-      name, val = vals.pop(0)
-	  
-      #print(text)
-      form = re.search(r'<%s:?([^:]*?)>' % name[1:-1], text).group(1)
-      if not is_determined(form, forms):
+
+      form = forms[name]
+      form.eval(forms)
+      if not form.is_final():
         vals.append((name, val))
         continue
-	
-      if val in synonyms:
-        val = random.choice(synonyms[val])
 
-      text = re.sub(r'<%s:?(.*?)>' % name[1:-1], lambda q: declinate(val, q.group(), grammar, forms), text)
-	  
+      text = re.sub(r'<%s:?([^:]*?)>' % name, lambda qq: declinate(val, form, grammar), text)
       if val in grammar['dependent_forms']:
-        form = merge_form(form, grammar['dependent_forms'][val], forms)
+        forms[name].merge(Form(grammar['dependent_forms'][val]))
 
-      forms[name[1:-1]] = form
-      text = ' '.join(text.split())
-	  
     text = replace_optionals(text)
     text = ' '.join(text.split())
     text = other_heuristic(text, state['vals'])
@@ -522,65 +534,66 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
 
   return text_questions, structured_questions, answers
 
-  
-def declinate(val, name, grammar, forms):
-  name = name[1:-1].split(':')
-  name = '' if len(name) == 1 else name[-1]
-  name = split_form(name)
-  name = [(forms[q] if q in forms else q) for q in name]
-  name = ','.join(name)
-  
-  if val == '':
+
+def declinate(word, form, grammar):
+  form_str = form.str()
+
+  if word == '':
     return ''
   
-  if val in grammar and name in grammar[val]:
-    ending = grammar[val][name]
-  elif name in grammar['regular_endings']:
-    ending = grammar['regular_endings'][name]
-  elif is_empty(name):
-    return val
+  if word in grammar and form_str in grammar[word]:
+    ending = grammar[word][form_str]
+  elif form_str in grammar['regular_endings']:
+    ending = grammar['regular_endings'][form_str]
   else:
-    return val + ':' + name
-	
+    return word
+  
   ending_letters = ending.replace('-', '')
   ending_offset = len(ending) - len(ending_letters)
-  return (val[:-ending_offset] if ending_offset > 0  else val) + ending_letters
+  return (word[:-ending_offset] if ending_offset > 0  else word) + ending_letters
   
   
-def merge_form(f1, f2, forms):
-  if f1 in forms:
-    f1 = forms[f1]
-  f1 = split_form(f1)
-  
-  if f2 in forms:
-    f2 = forms[f2]
-  f2 = split_form(f2)
-  
-  if len(f1) < 3:
-    return ','.join(f2)
-	
-  if len(f2) < 3:
-    return ','.join(f1)
-  
-  c1, n1, g1 = f1
-  c2, n2, g2 = f2
-  c = c1 if c2 == '' else c2
-  n = n1 if n2 == '' else n2
-  g = g1 if g2 == '' else g2
-  return c + ',' + n + ',' + g
-  
-  
-def is_determined(form, forms):
-  form = split_form(form)
-  return all([f.islower() or f == '' or f in forms for f in form])
-  
-  
-def is_empty(form):
-  return form in ('', ',,')
-  
-  
-def split_form(form):
-  return form.split(',')
+class Form:
+  def __init__(self, s):
+    self.props = {}
+    for prop in s.split(','):
+      kv = prop.split('=')
+      if len(kv) == 1:
+        kv.append('')
+      k, v = kv
+      self.props[k] = v
+
+  def str(self):
+    return ','.join([k + '=' + v for (k, v) in self.props.items()])
+
+  def eq(self, other):
+    for k, v in self.props:
+      if other.props[k] != v:
+        return False
+    return True
+
+  def merge(self, other):
+    for k in self.props:
+      if other.props[k] != '':
+        self.props[k] = other.props[k]
+    return
+
+  def eval(self, forms):
+    while True:
+      for k, v in self.props.items():
+        if v in forms and forms[v].props[k] != '':
+          self.props[k] = forms[v].props[k]
+          continue
+      break
+
+  def is_final(self):
+    return all([v.islower() or v == '' for v in self.props.values()])
+
+
+class Token:
+  def __init__(self, s):
+    self.name, form_str = s.split(':')
+    self.form = Form(form_str)
 
 
 def replace_optionals(s):

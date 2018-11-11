@@ -1,57 +1,57 @@
 {
   "rzecz": {
-	"d,sg,": "y",
-	"d,pl,": "y",
-	"n,sg,": "a"
+	"case=gen,num=sg,gen=": "y",
+	"case=gen,num=pl,gen=": "y",
+	"case=n,num=sg,gen=": "a"
   },
   "przedmiot": {
-	"d,sg,": "u",
-	"d,pl,": "ow",
-	"n,sg,": "em"
+	"case=gen,num=sg,gen=": "u",
+	"case=gen,num=pl,gen=": "ow",
+	"case=n,num=sg,gen=": "em"
   },
   "kostka": {
-	"d,sg,": "-i",
-	"d,pl,": "--ek",
-	"n,sg,": "-a"
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "--ek",
+	"case=n,num=sg,gen=": "-a"
   },
   "kula": {
-	"d,sg,": "-i",
-	"d,pl,": "-",
-	"n,sg,": "-a"
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "-",
+	"case=n,num=sg,gen=": "-a"
   },
   "kulka": {
-	"d,sg,": "-i",
-	"d,pl,": "--ek",
-	"n,sg,": "-a"
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "--ek",
+	"case=n,num=sg,gen=": "-a"
   },
   "szescian": {
-	"d,sg,": "u",
-	"d,pl,": "ow",
-	"n,sg,": "em"
+	"case=gen,num=sg,gen=": "u",
+	"case=gen,num=pl,gen=": "ow",
+	"case=n,num=sg,gen=": "em"
   },
   "walec": {
-	"d,sg,": "--ca",
-	"d,pl,": "--cow",
-	"n,sg,": "--cem"
+	"case=gen,num=sg,gen=": "--ca",
+	"case=gen,num=pl,gen=": "--cow",
+	"case=n,num=sg,gen=": "--cem"
   },
   "regular_endings": {
-	"d,sg,m": "-ego",
-	"d,sg,f": "-ej",
-	"d,pl,": "ch",
-	"n,sg,m": "m",
-	"n,sg,f": "-a"
+	"case=gen,num=sg,gen=m": "-ego",
+	"case=gen,num=sg,gen=f": "-ej",
+	"case=gen,num=pl,gen=": "ch",
+	"case=n,num=sg,gen=m": "m",
+	"case=n,num=sg,gen=f": "-a"
   },
   "dependent_forms": {
-	"kostka": ",,f",
-	"kula": ",,f",
-	"kulka": ",,f",
-	"przedmiot": ",,m",
-	"rzecz": ",,f",
-	"szescian": ",,m",
-	"walec": ",,m",
-    "z przodu": "d,sg,",
-    "za": "n,sg,",
-    "po prawej od": "d,sg,",
-    "po lewej od": "d,sg,"
+	"kostka": "case=,num=,gen=f",
+	"kula": "case=,num=,gen=f",
+	"kulka": "case=,num=,gen=f",
+	"przedmiot": "case=,num=,gen=m",
+	"rzecz": "case=,num=,gen=f",
+	"szescian": "case=,num=,gen=m",
+	"walec": "case=,num=,gen=m",
+    "z przodu": "case=gen,num=sg,gen=",
+    "za": "case=n,num=sg,gen=",
+    "po prawej od": "case=gen,num=sg,gen=",
+    "po lewej od": "case=gen,num=sg,gen="
   }
 }
