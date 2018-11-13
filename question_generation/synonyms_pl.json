@@ -15,10 +15,12 @@
   "yellow": ["zolty"],
   "metal": ["metaliczny", "metalowy", "blyszczacy"],
   "rubber": ["gumowy", "matowy"],
-  "left": ["po lewej od"],
-  "right": ["po prawej od"],
+  "left": ["na lewo od"],
+  "right": ["na prawo od"],
   "behind": ["za"],
   "front": ["z przodu"],
   "above": ["nad"],
-  "below": ["pod"]
+  "below": ["pod"],
+  "that": ["ktory"],
+  "big": ["duzy"]
 }

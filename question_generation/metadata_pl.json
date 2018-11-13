@@ -19,6 +19,12 @@
     ],
     "Material": [
       "rubber", "metal"
+    ],
+    "Big": [
+      "big"
+    ],
+    "That": [
+      "that"
     ]
   },
   "functions": [

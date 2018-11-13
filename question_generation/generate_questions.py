@@ -486,18 +486,18 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     answers.append(state['answer'])
     text = random.choice(template['text'])
 
-    vals_en = list(state['vals'].items())
     vals = []
     forms = {}
 
     tokens = re.findall(r'<(.*?):?([^:]*?)>', text)
-    for token in tokens:
-      name, word = token
-      forms[name] = Form(word)
+    for (name, form) in tokens:
+      forms[name] = Form(form)
+      name_tag = '<'+name+'>'
+      if name_tag not in state['vals'].keys():
+        state['vals'][name_tag] = metadata['types'][param_name_to_type[name_tag]][0]
 
-    for val in vals_en:
-      name = val[0][1:-1]
-      word = val[1]
+    for name, word in state['vals'].items():
+      name = name[1:-1]
 
       if word == '':
         vals.append((name, ''))
@@ -510,22 +510,17 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
       vals.append((name, word))
 
     while len(vals) > 0:
-      name, val = vals.pop(0)
-
-      if verbose:
-        print(text)
-        print('\t', val, name)
-        print('\t', forms)
+      name, word = vals.pop(0)
 
       form = forms[name]
       form.eval(forms)
       if not form.is_final():
-        vals.append((name, val))
+        vals.append((name, word))
         continue
 
-      text = re.sub(r'<%s:?([^:]*?)>' % name, lambda qq: declinate(val, form, grammar), text)
-      if val in grammar['dependent_forms']:
-        forms[name].merge(Form(grammar['dependent_forms'][val]))
+      text = re.sub(r'<%s:([^:]*?)>' % name, declinate(word, form, grammar), text)
+      if word in grammar['dependent_forms']:
+        forms[name].merge(Form(grammar['dependent_forms'][word]))
 
     text = replace_optionals(text)
     text = ' '.join(text.split())
@@ -576,7 +571,6 @@ class Form:
     for k in self.props:
       if other.props[k] != '':
         self.props[k] = other.props[k]
-    return
 
   def eval(self, forms):
     while True:
@@ -588,12 +582,6 @@ class Form:
 
   def is_final(self):
     return all([v.islower() or v == '' for v in self.props.values()])
-
-
-class Token:
-  def __init__(self, s):
-    self.name, form_str = s.split(':')
-    self.form = Form(form_str)
 
 
 def replace_optionals(s):

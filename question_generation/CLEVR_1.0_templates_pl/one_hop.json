@@ -1,7 +1,42 @@
 [
+	{
+	"text": ["Jak <F:case=S2,num=S2,gen=S2> jest <Z2:case=S2,num=S2,gen=S2> <C2:case=S2,num=S2,gen=S2> <M2:case=S2,num=S2,gen=S2> <S2:case=nom,num=sg,gen=> <T:case=nom,num=S2,gen=S2> jest <R:case=,num=,gen=> <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=R,num=sg,gen=>?"],
+	"nodes": [{
+		"inputs": [],
+		"type": "scene"
+	}, {
+		"side_inputs": ["<Z>", "<C>", "<M>", "<S>"],
+		"inputs": [0],
+		"type": "filter_unique"
+	}, {
+		"side_inputs": ["<R>", "<Z2>", "<C2>", "<M2>", "<S2>"],
+		"inputs": [1],
+		"type": "relate_filter_unique"
+	}, {
+		"inputs": [2],
+		"type": "query_size"
+	}],
+	"params": [
+      {"type": "Big", "name": "<F>"},
+      {"type": "Size", "name": "<Z>"},
+      {"type": "Color", "name": "<C>"},
+      {"type": "Material", "name": "<M>"},
+      {"type": "Shape", "name": "<S>"},
+      {"type": "That", "name": "<T>"},
+      {"type": "Relation", "name": "<R>"},
+      {"type": "Size", "name": "<Z2>"},
+      {"type": "Color", "name": "<C2>"},
+      {"type": "Material", "name": "<M2>"},
+      {"type": "Shape", "name": "<S2>"}
+    ],
+	"constraints": [{
+		"params": ["<Z2>"],
+		"type": "NULL"
+	}]
+},
 {
 "text": [
-	"Ile <Z2:case=gen,num=pl,gen=> <C2:case=gen,num=pl,gen=> <M2:case=gen,num=pl,gen=> <S2:case=gen,num=pl,gen=> jest <R:case=,num=,gen=> <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=R,num=sg,gen=>?"
+	"Ile <Z2:case=S2,num=S2,gen=S> <C2:case=gen,num=pl,gen=> <M2:case=gen,num=pl,gen=> <S2:case=gen,num=pl,gen=> jest <R:case=,num=,gen=> <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=R,num=sg,gen=>?"
 ], 
 "nodes": [
 	{"inputs": [], "type": "scene"}, 
