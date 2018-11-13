@@ -34,7 +34,16 @@
 	"case=gen,num=pl,gen=": "--cow",
 	"case=n,num=sg,gen=": "--cem"
   },
+  "duży": {
+	"case=nom,num=sg,gen=m": "",
+	"case=nom,num=sg,gen=f": "-a"
+  },
+  "który": {
+	"case=nom,num=sg,gen=m": "",
+	"case=nom,num=sg,gen=f": "-a"
+  },
   "regular_endings": {
+	"case=nom,num=sg,gen=f": "-a",
 	"case=gen,num=sg,gen=m": "-ego",
 	"case=gen,num=sg,gen=f": "-ej",
 	"case=gen,num=pl,gen=": "ch",
