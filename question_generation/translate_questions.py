@@ -80,6 +80,12 @@ def add_gen(t, forms):
 
   return t
 
+def declinate_big(t, forms):
+  words = t.split(' ')
+  num_s = len([w for w in words if w.startswith('<S')])
+  first_s_name = 'S' + str(num_s) if num_s > 1 else 'S'
+  forms['F'] = Form('case=' + first_s_name + ',num=' + first_s_name + ',gen=' + first_s_name)
+
 def uzgodnij(forms):
   for i in range(1, 5):
     stri = '' if i == 1 else str(i)
@@ -96,30 +102,32 @@ def add_forms(t, forms):
 
 
 def tr(t):
+  translations_mutable = [
+    ('are the same <feature> as', 'ma ten sam <feature> co'),
+    ('does it have the same <feature> as', 'czy ma ten sam <feature>, co'),
+    ('is it the same <feature> as', 'czy ma ten sam <feature>, co'),
+    ('is its <feature> the same as', 'czy ma ten sam <feature>, co'),
+    ('is what <feature>', 'jest jakiego <feature>u'),
+    ('has what <feature>', 'ma jaki <feature>'),
+    ('have same <feature> as', 'ma ten sam <feature> co'),
+    ('have the same <feature> as', 'ma ten sam <feature> co'),
+    ('have the same <feature>', 'mają ten sam <feature>'),
+    ('of the same <feature> as the', 'tego samego <feature>u, co'),
+    ('that is the same <feature> as the', 'który jest tego samego <feature>u, co'),
+    ('what is its <feature>', 'jaki jest jego <feature>'),
+    ('what is the <feature> of the other', 'jaki jest <feature> innego'),
+    ('what is the <feature> of the', 'jaki jest <feature>'),
+    ('what number of other objects are there of the same <feature> as the', 'ile przedmiotów ma ten sam <feature>, co'),
+    ('what <feature> is it', 'jaki ma <feature>'),
+    ('what <feature> is the other', 'jaki <feature> ma inny'),
+    ('is the <feature> of', 'czy <feature>'),
+  ]
+  
   translations = [
     ('same as', 'taka sama jak'),                                # !
     ('does the', 'czy'),                                # wymuszaja liczbe
     ('does it', 'czy'),                                # wymuszaja liczbe
     ('do the', 'czy'),
-
-    ('are the same size as', 'ma ten sam rozmiar co'),
-    ('does it have the same size as', 'czy ma ten sam rozmiar, co'),
-    ('is it the same size as', 'czy ma ten sam rozmiar, co'),
-    ('is its size the same as', 'czy ma ten sam rozmiar, co'),
-    ('is what size', 'jest jakiego rozmiaru'),
-    ('has what size', 'jest jakiego rozmiaru'),
-    ('have same size as', 'ma ten sam rozmiar co'),
-    ('have the same size as', 'ma ten sam rozmiar co'),
-    ('have the same size', 'mają ten sam rozmiar'),
-    ('of the same size as the', 'tego samego rozmiaru, co'),
-    ('that is the same size as the', 'który jest tego samego rozmiaru, co'),
-    ('what is its size', 'jaki jest jego rozmiar'),
-    ('what is the size of the other', 'jaki jest rozmiar innego'),
-    ('what is the size of the', 'jaki jest rozmiar'),
-    ('what number of other objects are there of the same size as the', 'ile przedmiotów ma ten sam rozmiar, co'),
-    ('what size is it', 'jaki ma rozmiar'),
-    ('what size is the other', 'jaki rozmiar ma inny'),
-    ('is the size of', 'czy rozmiar'),
 
     ('are [made of] same materiał as', 'jest [zrobione] z tego samego materialu, co'),   # !
     ('that is [made of] same material as', 'który jest [zrobiony] z tego samego materialu, co'),   # !
@@ -163,14 +171,9 @@ def tr(t):
 
     ('that is', 'który/a jest'),                        # !
     ('that are', 'które są'),
-    ('what is its shape', 'jaki jest jego/jej kształt'),
-    ('what is the', 'jaki jest'),
-    ('what shape is the', 'jakiego kształtu jest'),     # albo 'jaki ma kształt' - uwaga na przypadek!
-    ('what size is the', 'jakiego rozmiaru jest'),
-    ('what material is the', 'z jakiego materiału jest'),
-    ('what is the material of', 'z jakiego materiału jest'),
-    ('how big is the', 'jak duży/duża jest'),           # !
-    ('is what shape?', 'jest jakiego kształtu'),           # !
+
+    ('how big is it', 'jaki jest <F>'),
+    ('how big is', 'jak <F> jest'),
   ]
 
   translations2 = [
@@ -200,7 +203,13 @@ def tr(t):
   t = add_gen(t, forms)
   uzgodnij(forms)
 
-  t = add_forms(t, forms)
+  # t = add_forms(t, forms)
+
+  for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'ksztalt'), ('material', 'material')):
+    for (trfrom, trto) in translations_mutable:
+      trfrom = trfrom.replace('<feature>', f_en)
+      trto = trto.replace('<feature>', f_pl)
+      translations.append((trfrom, trto))
 
   for i, (trfrom, trto) in enumerate(list(translations)):
     if len(trto) == 0:
@@ -218,6 +227,9 @@ def tr(t):
   for trfrom, trto in translations2:
     t = re.sub(trfrom, trto, t)
 
+  declinate_big(t, forms)
+  t = add_forms(t, forms)
+
   return t
 
 
@@ -225,7 +237,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('.json'): continue
+    if not fn.endswith('zero_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       base = os.path.splitext(fn)[0]
       for i, template in enumerate(json.load(f)):
@@ -235,15 +247,11 @@ def main(args):
 
   texts = []
   for k, v in templates.items():
-    for t in v['text']:
-      # print(t)
-      texts.append(t)
+    for i, t in enumerate(v['text']):
+      t = tr(t)
 
-  texts = [t for t in texts if 'size' in t]
-  texts_pl = [tr(t) for t in texts[:260]]
-
-  for en, pl in zip(texts, texts_pl):
-    print(en, '\n', pl, '\n')
+  with open(os.path.join(args.template_dir + '_pl', 't2.json'), 'w') as fout:
+    fout.write(json.dumps(templates))
 
 
 if __name__ == '__main__':
