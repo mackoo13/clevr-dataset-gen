@@ -116,11 +116,12 @@ def tr(t):
     ('that is the same <feature> as the', 'który jest tego samego <feature>u, co'),
     ('what is its <feature>', 'jaki jest jego <feature>'),
     ('what is the <feature> of the other', 'jaki jest <feature> innego'),
-    ('what is the <feature> of the', 'jaki jest <feature>'),
+    ('what is the <feature> of', 'jaki jest <feature>'),
     ('what number of other objects are there of the same <feature> as the', 'ile przedmiotów ma ten sam <feature>, co'),
     ('what <feature> is it', 'jaki ma <feature>'),
+    ('what <feature> is', 'jakiego <feature>u jest'),
     ('what <feature> is the other', 'jaki <feature> ma inny'),
-    ('is the <feature> of', 'czy <feature>'),
+    (r'Is the <feature> of', 'Czy <feature>'),
   ]
   
   translations = [
@@ -128,10 +129,14 @@ def tr(t):
     ('does the', 'czy'),                                # wymuszaja liczbe
     ('does it', 'czy'),                                # wymuszaja liczbe
     ('do the', 'czy'),
+    ('are there\?', 'jest?'),
 
-    ('are [made of] same materiał as', 'jest [zrobione] z tego samego materialu, co'),   # !
-    ('that is [made of] same material as', 'który jest [zrobiony] z tego samego materialu, co'),   # !
-    ('that is [made of] the same material as', 'który jest [zrobiony] z tego samego materialu, co'),   # !
+    (r'Are any (.*?) visible\?', r'Czy jakieś \1 są widoczne\?'),
+    (r'What is (.*?) made of\?', r'Z czego jest \1\?'),
+
+    ('are [made of] same material as', 'jest [zrobione] z tego samego materiału, co'),   # !
+    ('that is [made of] same material as', 'który jest [zrobiony] z tego samego materiału, co'),   # !
+    ('that is [made of] the same material as', 'który jest [zrobiony] z tego samego materiału, co'),   # !
 
     ('that is same color as the', 'który jest tego samego koloru, co'),   # !
     ('that is the same color as the', 'który jest tego samego koloru, co'),   # !
@@ -205,7 +210,7 @@ def tr(t):
 
   # t = add_forms(t, forms)
 
-  for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'ksztalt'), ('material', 'material')):
+  for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'kształt'), ('material', 'material')):
     for (trfrom, trto) in translations_mutable:
       trfrom = trfrom.replace('<feature>', f_en)
       trto = trto.replace('<feature>', f_pl)
@@ -230,6 +235,9 @@ def tr(t):
   declinate_big(t, forms)
   t = add_forms(t, forms)
 
+  t = re.sub(r'^ ', '', t)
+  t = re.sub(r'^jakiego materiału', 'Z jakiego materiału', t)
+
   return t
 
 
@@ -239,19 +247,19 @@ def main(args):
   for fn in os.listdir(args.template_dir):
     if not fn.endswith('zero_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
-      base = os.path.splitext(fn)[0]
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
         key = (fn, i)
         templates[key] = template
 
-  texts = []
   for k, v in templates.items():
+    texts = []
     for i, t in enumerate(v['text']):
-      t = tr(t)
+      texts.append(tr(t))
+    templates[k]['text'] = texts
 
   with open(os.path.join(args.template_dir + '_pl', 't2.json'), 'w') as fout:
-    fout.write(json.dumps(templates))
+    fout.write(json.dumps(list(templates.values())))
 
 
 if __name__ == '__main__':

@@ -36,7 +36,7 @@
 },
 {
 "text": [
-	"Ile <Z2:case=S2,num=S2,gen=S> <C2:case=gen,num=pl,gen=> <M2:case=gen,num=pl,gen=> <S2:case=gen,num=pl,gen=> jest <R:case=,num=,gen=> <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=R,num=sg,gen=>?"
+	"Ile <Z2:case=S2,num=S2,gen=S2> <C2:case=S2,num=S2,gen=S2> <M2:case=S2,num=S2,gen=S2> <S2:case=gen,num=pl,gen=> jest <R:case=,num=,gen=> <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=R,num=sg,gen=>?"
 ], 
 "nodes": [
 	{"inputs": [], "type": "scene"}, 
