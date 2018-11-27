@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='D:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -526,6 +526,7 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     text = replace_optionals(text)
     text = ' '.join(text.split())
     text = other_heuristic(text, state['vals'])
+    text = text[0].upper() + text[1:]
     text_questions.append(text)
 
   return text_questions, structured_questions, answers
@@ -617,7 +618,7 @@ def replace_optionals(s):
 
 
 def main(args):
-  with open(args.metadata_file, 'r') as f:
+  with open(args.metadata_file, 'r', encoding='utf8') as f:
     metadata = json.load(f)
     dataset = metadata['dataset']
     if dataset != 'CLEVR-v1.0':
@@ -681,11 +682,11 @@ def main(args):
     all_scenes = all_scenes[begin:]
 
   # Read synonyms file
-  with open(args.synonyms_json, 'r') as f:
+  with open(args.synonyms_json, 'r', encoding='utf8') as f:
     synonyms = json.load(f)
 
   # Read grammar file
-  with open(args.synonyms_json, 'r') as f:
+  with open(args.grammar_json, 'r', encoding='utf8') as f:
     grammar = json.load(f)
 
   questions = []
@@ -769,7 +770,7 @@ def main(args):
       else:
         f['value_inputs'] = []
 
-  with open(args.output_questions_file, 'w') as f:
+  with open(args.output_questions_file, 'w', encoding='utf8') as f:
     print('Writing output to %s' % args.output_questions_file)
     print('\n'.join([q['question'] for q in questions]))
     json.dump({
