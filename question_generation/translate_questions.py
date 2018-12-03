@@ -102,6 +102,8 @@ def declinate_big(t, forms):
   first_s_name = 'S' + str(num_s) if num_s > 1 else 'S'
   forms['F'] = Form('case=' + first_s_name + ',num=' + first_s_name + ',gen=' + first_s_name)
 
+  return '<F>'
+
 def uzgodnij(forms):
   for i in range(1, 5):
     stri = '' if i == 1 else str(i)
@@ -137,6 +139,9 @@ def tr(t):
      r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
     (r'What number of (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
     (r'How many (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
+  ]
+
+  translations_two = [
   ]
 
   translations_comparison = [
@@ -221,8 +226,8 @@ def tr(t):
     ('that is', 'ktory/a jest'),                        # !
     ('that are', 'ktore sa'),
 
-    ('how big is it', 'jaki jest <F:>'),
-    ('how big is', 'jak <F:> jest'),
+    ('how big is it', 'jaki jest <F>'),
+    ('how big is', 'jak <F> jest'),
 
     # first words
     ('Is', 'Czy'),
@@ -266,6 +271,7 @@ def tr(t):
 
   translations.extend(translations_zero)
   translations.extend(translations_one)
+  translations.extend(translations_two)
   translations.extend(translations_comparison)
   translations.extend(translations_compare_integer)
 
@@ -282,21 +288,22 @@ def tr(t):
     for trfrom, trto in tns:
       t = re.sub(trfrom, trto, t)
 
-  declinate_big(t, forms)
+  big_param_names = declinate_big(t, forms)
+
   t = add_forms(t, forms)
 
   t = re.sub(r'^ ', '', t)
   t = re.sub('  ', ' ', t)
   t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
 
-  return t
+  return t, big_param_names
 
 
 def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('one_hop.json'): continue
+    if not fn.endswith('two_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -305,11 +312,17 @@ def main(args):
 
   for k, v in templates.items():
     texts = []
+    big_param_names = set()
     for i, t in enumerate(v['text']):
-      texts.append(tr(t))
+      translated, big_params = tr(t)
+      texts.append(translated)
+      big_param_names.add(big_params)
+
+    big_params = [{'type': 'Big', 'name': name} for name in big_param_names]
+    templates[k]['params'].extend(big_params)
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 't3.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', 't6.json'), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 
