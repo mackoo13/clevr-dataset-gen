@@ -139,7 +139,7 @@ def uzgodnij_r_s(t, forms):
       last_r = re.search(r'<(.*?)>', words[i]).group(1)
     elif last_r is not None and words[i].startswith('<S'):
       s_name = re.search(r'<(.*?)>', words[i]).group(1)
-      forms[s_name] = Form('case=' + last_r)
+      forms[s_name] = Form('case=' + last_r + ',num=,gen=')
     elif words[i] not in ['the'] and not words[i].startswith('<'):
       last_r = None
 
