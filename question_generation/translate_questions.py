@@ -110,8 +110,18 @@ def uzgodnij(forms):
     if 'S' + stri in forms:
       for name in ('Z', 'C', 'M'):
         forms[name + stri] = Form('case=S' + stri + ',num=S' + stri + ',gen=S' + stri)
-    if 'R' + stri in forms:
-      forms['S' + stri].props['case'] = 'R' + stri
+
+def uzgodnij_r_s(t, forms):
+  words = t.split(' ')
+  last_r = None
+  for i in range(len(words)):
+    if re.match(r'<R.*>', words[i]):
+      last_r = re.search(r'<(.*?)>', words[i]).group(1)
+    elif last_r is not None and re.match(r'<S.*>', words[i]):
+      s_name = re.search(r'<(.*?)>', words[i]).group(1)
+      forms[s_name] = Form('case=' + last_r)
+    elif words[i] not in ['the'] and not re.match(r'<.*>', words[i]):
+      last_r = None
 
 def add_forms(t, forms):
   print(t)
@@ -260,6 +270,7 @@ def tr(t):
   t = add_plural(t, forms)
   t = add_gen(t, forms)
   uzgodnij(forms)
+  uzgodnij_r_s(t, forms)
 
   # t = add_forms(t, forms)
 
