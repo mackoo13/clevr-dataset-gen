@@ -82,7 +82,7 @@ def add_plural(t, forms):
 def add_gen(t, forms):
   words = t.split(' ')
   for i in range(len(words)):
-    if words[i] in ('of', 'many', 'more', 'fewer', 'than'):
+    if words[i] in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', words[i]):
       for j in range(i+1, len(words)):
         if words[j] == 'the':
           continue
@@ -125,24 +125,24 @@ def tr(t):
     ('how many', 'ile'),
     ('what number of', 'ile'),
     ('is there a ', 'czy [na obrazku] jest '),
-    (r'How many (.*?) are there\?', r'Ile jest \1?'),
-    (r'What number of (.*?) are there\?', r'Ile jest \1?'),
-    (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
+    (r'How many (.*?) are there\?', r'Ile jest \1\?'),
+    (r'What number of (.*?) are there\?', r'Ile jest \1\?'),
+    (r'Are any (.*?) visible\?', r'Czy widać jakieś \1\?'),
   ]
 
   translations_one = [
-    (r'There is a (.*?); what number of (.*?) are (.*?) it?',
-     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
-    (r'There is a (.*?); how many (.*?) are (.*?) it?',
-     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
-    (r'What number of (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3?'),
-    (r'How many (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3?'),
+    (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
+     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
+    (r'There is a (.*?); how many (.*?) are (.*?) it\?',
+     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
+    (r'What number of (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
+    (r'How many (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
   ]
 
   translations_comparison = [
-    (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2?'),
-    (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
-    (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2?'),
+    (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2\?'),
+    (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału\?'),
+    (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2\?'),
     ('made of the same material as the', 'z tego samego materiału, co'),
   ]
 
@@ -185,7 +185,7 @@ def tr(t):
   ]
 
   translations = [
-    ('same as', 'taka sama jak'),                                # !
+    ('same as', 'jest taki sam jak'),                                # !
     ('does the', 'czy'),                                # wymuszaja liczbe
     ('does it', 'czy'),                                # wymuszaja liczbe
     ('do the', 'czy'),
@@ -296,7 +296,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('compare_integer.json'): continue
+    if not fn.endswith('one_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -309,7 +309,7 @@ def main(args):
       texts.append(tr(t))
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 't5.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', 't3.json'), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 
