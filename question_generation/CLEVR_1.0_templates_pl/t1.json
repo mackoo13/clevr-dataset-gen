@@ -22,7 +22,7 @@
       {"type": "Color", "name": "<C>"},
       {"type": "Material", "name": "<M>"},
       {"type": "Shape", "name": "<S>"},
-      {"type": "That", "name": "<T>"},
+      {"type": "Which", "name": "<T>"},
       {"type": "Relation", "name": "<R>"},
       {"type": "Size", "name": "<Z2>"},
       {"type": "Color", "name": "<C2>"},

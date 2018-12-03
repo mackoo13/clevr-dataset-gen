@@ -104,6 +104,26 @@ def declinate_big(t, forms):
 
   return '<F>'
 
+def declinate_which(t, forms):
+  words = t.split(' ')
+  current = 1
+  tokens = []
+
+  for i in range(len(words)):
+    if words[i] == '<W>' and current > 1:
+      words[i] = '<W' + str(current) + '>'
+      tokens.append(words[i])
+
+  last_s = None
+  for i in range(len(words)):
+    if words[i].startswith('<S'):
+      last_s = re.search(r'<(.*?)>', words[i]).group(1)
+    elif last_s is not None and words[i].startswith('<W'):
+      w_name = re.search(r'<(.*?)>', words[i]).group(1)
+      forms[w_name] = Form('gen=' + last_s + ',num=' + last_s)
+
+  return tokens
+
 def uzgodnij(forms):
   for i in range(1, 5):
     stri = '' if i == 1 else str(i)
@@ -115,12 +135,12 @@ def uzgodnij_r_s(t, forms):
   words = t.split(' ')
   last_r = None
   for i in range(len(words)):
-    if re.match(r'<R.*>', words[i]):
+    if words[i].startswith('<R'):
       last_r = re.search(r'<(.*?)>', words[i]).group(1)
-    elif last_r is not None and re.match(r'<S.*>', words[i]):
+    elif last_r is not None and words[i].startswith('<S'):
       s_name = re.search(r'<(.*?)>', words[i]).group(1)
       forms[s_name] = Form('case=' + last_r)
-    elif words[i] not in ['the'] and not re.match(r'<.*>', words[i]):
+    elif words[i] not in ['the'] and not words[i].startswith('<'):
       last_r = None
 
 def add_forms(t, forms):
@@ -187,7 +207,7 @@ def tr(t):
     ('have the same <feature> as', 'ma ten sam <feature> co'),
     ('have the same <feature>', 'maja ten sam <feature>'),
     ('of the same <feature> as the', 'tego samego <feature>u, co'),
-    ('that is the same <feature> as the', 'ktory jest tego samego <feature>u, co'),
+    ('that is the same <feature> as the', '<W> jest tego samego <feature>u, co'),
     ('the same <feature> as the', 'tego samego <feature>u, co'),
     ('what is its <feature>', 'jaki jest jego <feature>'),
     ('what is the <feature> of the other', 'jaki jest <feature> innego'),
@@ -208,11 +228,11 @@ def tr(t):
     (r'What is (.*?) made of\?', r'Z czego jest \1\?'),
 
     ('are [made of] same material as', 'jest [zrobione] z tego samego materiału, co'),   # !
-    ('that is [made of] same material as', 'ktory jest [zrobiony] z tego samego materiału, co'),   # !
-    ('that is [made of] the same material as', 'ktory jest [zrobiony] z tego samego materiału, co'),   # !
+    ('that is [made of] same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
+    ('that is [made of] the same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
 
-    ('that is same color as the', 'ktory jest tego samego koloru, co'),   # !
-    ('that is the same color as the', 'ktory jest tego samego koloru, co'),   # !
+    ('that is same color as the', '<W> jest tego samego koloru, co'),   # !
+    ('that is the same color as the', '<W> jest tego samego koloru, co'),   # !
 
     ('are there any other things', 'czy jest coo'),
     ('is there another', 'czy jest inny'),
@@ -233,8 +253,8 @@ def tr(t):
     ('how many other', 'ile innych'),
     ('what number of other', 'ile innych'),
 
-    ('that is', 'ktory/a jest'),                        # !
-    ('that are', 'ktore sa'),
+    ('that is', '<W> jest'),                        # !
+    ('that are', '<W> sa'),
 
     ('how big is it', 'jaki jest <F>'),
     ('how big is', 'jak <F> jest'),
@@ -300,6 +320,7 @@ def tr(t):
       t = re.sub(trfrom, trto, t)
 
   big_param_names = declinate_big(t, forms)
+  which_param_names = declinate_which(t, forms)
 
   t = add_forms(t, forms)
 
@@ -307,7 +328,7 @@ def tr(t):
   t = re.sub('  ', ' ', t)
   t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
 
-  return t, big_param_names
+  return t, big_param_names, which_param_names
 
 
 def main(args):
@@ -324,13 +345,17 @@ def main(args):
   for k, v in templates.items():
     texts = []
     big_param_names = set()
+    which_param_names = set()
     for i, t in enumerate(v['text']):
-      translated, big_params = tr(t)
+      translated, big_params, which_params = tr(t)
       texts.append(translated)
       big_param_names.add(big_params)
+      which_param_names.update(which_params)
 
     big_params = [{'type': 'Big', 'name': name} for name in big_param_names]
+    which_params = [{'type': 'Which', 'name': name} for name in which_param_names]
     templates[k]['params'].extend(big_params)
+    templates[k]['params'].extend(which_params)
     templates[k]['text'] = texts
 
   with open(os.path.join(args.template_dir + '_pl', 't6.json'), 'w') as fout:
