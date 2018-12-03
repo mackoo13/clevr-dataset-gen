@@ -105,14 +105,17 @@ def declinate_big(t, forms):
   return '<F>'
 
 def declinate_which(t, forms):
+  t = t.replace('[', '')
+  t = t.replace(']', '')
   words = t.split(' ')
   current = 1
-  tokens = []
+  tokens = set()
 
   for i in range(len(words)):
-    if words[i] == '<W>' and current > 1:
-      words[i] = '<W' + str(current) + '>'
-      tokens.append(words[i])
+    if words[i] == '<W>':
+      if current > 1:
+        words[i] = '<W' + str(current) + '>'
+      tokens.add(words[i])
 
   last_s = None
   for i in range(len(words)):
@@ -120,7 +123,7 @@ def declinate_which(t, forms):
       last_s = re.search(r'<(.*?)>', words[i]).group(1)
     elif last_s is not None and words[i].startswith('<W'):
       w_name = re.search(r'<(.*?)>', words[i]).group(1)
-      forms[w_name] = Form('gen=' + last_s + ',num=' + last_s)
+      forms[w_name] = Form('case=' + last_s + ',num=' + last_s + ',gen=' + last_s)
 
   return tokens
 
@@ -139,7 +142,7 @@ def uzgodnij_r_s(t, forms):
       last_r = re.search(r'<(.*?)>', words[i]).group(1)
     elif last_r is not None and words[i].startswith('<S'):
       s_name = re.search(r'<(.*?)>', words[i]).group(1)
-      forms[s_name] = Form('case=' + last_r + ',num=,gen=')
+      forms[s_name] = Form('case=' + last_r + ',num=sg,gen=')
     elif words[i] not in ['the'] and not words[i].startswith('<'):
       last_r = None
 
@@ -153,7 +156,7 @@ def add_forms(t, forms):
 
 def tr(t):
   translations_zero = [
-    ('are there any', 'czy sa jakies'),
+    ('are there any', 'czy są jakieś'),
     ('how many', 'ile'),
     ('what number of', 'ile'),
     ('is there a ', 'czy [na obrazku] jest '),
@@ -167,8 +170,9 @@ def tr(t):
      r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
     (r'There is a (.*?); how many (.*?) are (.*?) it\?',
      r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
-    (r'What number of (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
-    (r'How many (.*?) are (.*?) the (.*?)?', r'Ile \1 jest \2 \3\?'),
+    (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3\?'),
+    (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3\?'),
+    ('; what is it made of?', '. Z czego jest zrobiony/a?'),
   ]
 
   translations_two = [
@@ -282,7 +286,10 @@ def tr(t):
   forms = {}
   tokens = re.findall(r'<(.*?)>', t)
   for token in tokens:
-    forms[token] = Form('case=nom,num=sg,gen=')
+    if token.startswith('R'):
+      forms[token] = Form('case=,num=sg,gen=')
+    else:
+      forms[token] = Form('case=nom,num=sg,gen=')
 
   # for k, v in forms.items():
   #   print(k, v.str())
@@ -335,7 +342,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('two_hop.json'): continue
+    if not fn.endswith('one_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -358,7 +365,7 @@ def main(args):
     templates[k]['params'].extend(which_params)
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 't6.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', 'one_hop.json'), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 

@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='D:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -76,7 +76,7 @@ parser.add_argument('--num_scenes', default=10, type=int,
 parser.add_argument('--templates_per_image', default=10, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
-parser.add_argument('--instances_per_template', default=1, type=int,
+parser.add_argument('--instances_per_template', default=10, type=int,
     help="The number of times each template should be instantiated on an image")
 
 # Misc
@@ -517,7 +517,7 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
       form.eval(forms)
       if not form.is_final():
         vals.append((name, word))
-        print(name, word, form.str())
+        # print(name, word, form.str(), text, '\n\n')
         continue
 
       text = re.sub(r'<%s:([^:]*?)>' % name, declinate(word, form, grammar), text)
@@ -577,12 +577,11 @@ class Form:
         self.props[k] = other.props[k]
 
   def eval(self, forms):
-    while True:
-      for k, v in self.props.items():
-        if v in forms and forms[v].props[k] != '':
-          self.props[k] = forms[v].props[k]
-          continue
-      break
+    for k, v in self.props.items():
+      while v in forms and forms[v].props[k] != '':
+        v = forms[v].props[k]
+
+      self.props[k] = v
 
   def is_final(self):
     return all([v.islower() or v == '' for v in self.props.values()])
@@ -636,7 +635,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('6.json'): continue
+    if not fn.endswith('one_hop.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       base = os.path.splitext(fn)[0]
       for i, template in enumerate(json.load(f)):
