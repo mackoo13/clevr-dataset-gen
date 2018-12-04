@@ -102,7 +102,7 @@ def declinate_big(t, forms):
   first_s_name = 'S' + str(num_s) if num_s > 1 else 'S'
   forms['F'] = Form('case=' + first_s_name + ',num=' + first_s_name + ',gen=' + first_s_name)
 
-  return '<F>'
+  return t
 
 def declinate_which(t, forms):
   t = t.replace('[', '')
@@ -116,6 +116,7 @@ def declinate_which(t, forms):
       if current > 1:
         words[i] = '<W' + str(current) + '>'
       tokens.add(words[i])
+      current += 1
 
   last_s = None
   for i in range(len(words)):
@@ -123,9 +124,9 @@ def declinate_which(t, forms):
       last_s = re.search(r'<(.*?)>', words[i]).group(1)
     elif last_s is not None and words[i].startswith('<W'):
       w_name = re.search(r'<(.*?)>', words[i]).group(1)
-      forms[w_name] = Form('case=' + last_s + ',num=' + last_s + ',gen=' + last_s)
+      forms[w_name] = Form('case=nom,num=' + last_s + ',gen=' + last_s)
 
-  return tokens
+  return ' '.join(words)
 
 def uzgodnij(forms):
   for i in range(1, 5):
@@ -147,10 +148,8 @@ def uzgodnij_r_s(t, forms):
       last_r = None
 
 def add_forms(t, forms):
-  print(t)
   for k, v in forms.items():
     t = re.sub(r'<%s>' % k, '<' + k + ':' + v.str() + '>', t)
-  print(t)
   return t
 
 
@@ -167,7 +166,7 @@ def tr(t):
 
   translations_one = [
     (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
-     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
+     r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
     (r'There is a (.*?); how many (.*?) are (.*?) it\?',
      r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
     (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3\?'),
@@ -299,8 +298,6 @@ def tr(t):
   uzgodnij(forms)
   uzgodnij_r_s(t, forms)
 
-  # t = add_forms(t, forms)
-
   for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'kształt'), ('material', 'materiał')):
     for (trfrom, trto) in translations_mutable:
       trfrom = trfrom.replace('<feature>', f_en)
@@ -326,8 +323,15 @@ def tr(t):
     for trfrom, trto in tns:
       t = re.sub(trfrom, trto, t)
 
-  big_param_names = declinate_big(t, forms)
-  which_param_names = declinate_which(t, forms)
+  new_params = []
+  for param_prefix in ('W', 'F', 'I'):
+    new_params.extend(re.findall(r'<(%s\d*?).*>' % param_prefix, t))
+  print(t)
+  print(new_params)
+  print()
+
+  t = declinate_big(t, forms)
+  t = declinate_which(t, forms)
 
   t = add_forms(t, forms)
 
@@ -335,7 +339,7 @@ def tr(t):
   t = re.sub('  ', ' ', t)
   t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
 
-  return t, big_param_names, which_param_names
+  return t, new_params
 
 
 def main(args):
@@ -351,18 +355,15 @@ def main(args):
 
   for k, v in templates.items():
     texts = []
-    big_param_names = set()
-    which_param_names = set()
+    new_params_all = set()
     for i, t in enumerate(v['text']):
-      translated, big_params, which_params = tr(t)
+      translated, new_params = tr(t)
       texts.append(translated)
-      big_param_names.add(big_params)
-      which_param_names.update(which_params)
+      new_params_all.update(new_params)
 
-    big_params = [{'type': 'Big', 'name': name} for name in big_param_names]
-    which_params = [{'type': 'Which', 'name': name} for name in which_param_names]
-    templates[k]['params'].extend(big_params)
-    templates[k]['params'].extend(which_params)
+    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It'}
+    for param in new_params_all:
+      templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
     templates[k]['text'] = texts
 
   with open(os.path.join(args.template_dir + '_pl', 'one_hop.json'), 'w') as fout:

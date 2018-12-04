@@ -18,9 +18,10 @@
   "left": ["na lewo od"],
   "right": ["na prawo od"],
   "behind": ["za"],
-  "front": ["z przodu"],
+  "front": ["przed"],
   "above": ["nad"],
   "below": ["pod"],
+  "it": ["to"],
   "that": ["który"],
   "big": ["duży"]
 }

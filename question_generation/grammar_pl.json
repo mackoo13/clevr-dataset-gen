@@ -42,6 +42,12 @@
 	"case=nom,num=sg,gen=m": "",
 	"case=nom,num=sg,gen=f": "-a"
   },
+  "to": {
+	"case=gen,num=sg,gen=m": "--niego",
+	"case=gen,num=sg,gen=f": "--niej",
+	"case=inst,num=sg,gen=m": "--nim",
+	"case=inst,num=sg,gen=f": "--nią"
+  },
   "regular_endings": {
 	"case=nom,num=sg,gen=f": "-a",
 	"case=gen,num=sg,gen=m": "-ego",
@@ -59,7 +65,7 @@
 	"rzecz": "case=,num=,gen=f",
 	"sześcian": "case=,num=,gen=m",
 	"walec": "case=,num=,gen=m",
-    "z przodu": "case=gen,num=sg,gen=",
+    "przed": "case=inst,num=sg,gen=",
     "za": "case=inst,num=sg,gen=",
     "na prawo od": "case=gen,num=sg,gen=",
     "na lewo od": "case=gen,num=sg,gen="
