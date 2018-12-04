@@ -2,37 +2,44 @@
   "rzecz": {
 	"case=gen,num=sg,gen=": "y",
 	"case=gen,num=pl,gen=": "y",
-	"case=inst,num=sg,gen=": "ą"
+	"case=inst,num=sg,gen=": "ą",
+	"case=inst,num=pl,gen=": "ami"
   },
   "przedmiot": {
 	"case=gen,num=sg,gen=": "u",
 	"case=gen,num=pl,gen=": "ów",
-	"case=inst,num=sg,gen=": "em"
+	"case=inst,num=sg,gen=": "em",
+	"case=inst,num=pl,gen=": "ami"
   },
   "kostka": {
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "--ek",
-	"case=inst,num=sg,gen=": "-ą"
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
   },
   "kula": {
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "-",
-	"case=inst,num=sg,gen=": "-ą"
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
   },
   "kulka": {
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "--ek",
-	"case=inst,num=sg,gen=": "-ą"
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
   },
   "sześcian": {
 	"case=gen,num=sg,gen=": "u",
 	"case=gen,num=pl,gen=": "ów",
-	"case=inst,num=sg,gen=": "em"
+	"case=inst,num=sg,gen=": "em",
+	"case=inst,num=pl,gen=": "ami"
   },
   "walec": {
 	"case=gen,num=sg,gen=": "--ca",
 	"case=gen,num=pl,gen=": "--ców",
-	"case=inst,num=sg,gen=": "--cem"
+	"case=inst,num=sg,gen=": "--cem",
+	"case=inst,num=pl,gen=": "--cami"
   },
   "duży": {
 	"case=nom,num=sg,gen=m": "",
@@ -40,7 +47,9 @@
   },
   "który": {
 	"case=nom,num=sg,gen=m": "",
-	"case=nom,num=sg,gen=f": "-a"
+	"case=nom,num=sg,gen=f": "-a",
+	"case=nom,num=pl,gen=m": "-e",
+	"case=nom,num=pl,gen=f": "-e"
   },
   "to": {
 	"case=gen,num=sg,gen=m": "--niego",
@@ -58,8 +67,11 @@
 	"case=gen,num=sg,gen=f": "-ej",
 	"case=gen,num=pl,gen=f": "ch",
 	"case=gen,num=pl,gen=m": "ch",
+	"case=gen,num=pl,gen=": "ch",
 	"case=inst,num=sg,gen=m": "m",
-	"case=inst,num=sg,gen=f": "-ą"
+	"case=inst,num=sg,gen=f": "-ą",
+	"case=inst,num=pl,gen=m": "mi",
+	"case=inst,num=pl,gen=f": "mi"
   },
   "dependent_forms": {
 	"kostka": "case=,num=,gen=f",

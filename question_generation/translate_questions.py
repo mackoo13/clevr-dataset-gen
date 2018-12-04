@@ -53,6 +53,13 @@ parser.add_argument('--template_dir', default='CLEVR_1.0_templates',
 parser.add_argument('--verbose', action='store_true',
     help="Print more verbose output")
 
+def get_token_name(word):
+  token = re.search(r'<(.*?)>', word)
+  if token is None:
+    return None
+  name = token.group(1)
+  return name
+
 def add_plural(t, forms):
   words = t.split(' ')
   for i in range(len(words)):
@@ -86,13 +93,29 @@ def add_gen(t, forms):
       for j in range(i+1, len(words)):
         if words[j] == 'the':
           continue
-        token = re.search(r'<(.*?)>', words[j])
-        if token is None:
+        name = get_token_name(words[j])
+        if name is None:
           break
-        name = token.group(1)
         if not name.startswith('S'):
           continue
         forms[name].props['case'] = 'gen'
+
+  return t
+
+def add_inst(t, forms):
+  words = t.split(' ')
+  for i in range(len(words)):
+    if words[i] == 'are':
+      for j in range(i+1, len(words)):
+        name = get_token_name(words[j])
+        if name is not None and name.startswith('R'):
+          break
+
+        if name is None or not name.startswith('S'):
+          continue
+
+        forms[name].props['case'] = 'inst'
+        forms[name].props['num'] = 'pl'
 
   return t
 
@@ -175,6 +198,7 @@ def tr(t):
   ]
 
   translations_two = [
+    ('there is a ', 'na obrazku jest '),
   ]
 
   translations_comparison = [
@@ -197,6 +221,17 @@ def tr(t):
     ('fewer', 'mniej'),
     ('than', 'niż'),
     (r'is the number of (.*?) the same as the number of (.*?)?', r'czy liczba \1 jest taka sama jak liczba \2?')
+  ]
+
+  translations_single_or = [
+    ('either', 'albo'),
+    ('or', 'albo'),
+    (r'how many (.*?) things are', r'ile \1 rzeczy jest'),
+    (r'what number of (.*?) things are', r'ile \1 rzeczy jest'),
+    (r'how many (.*?) objects are', r'ile \1 obiektów jest'),
+    (r'what number of (.*?) objects are', r'ile \1 obiektów jest'),
+    (r'how many (.*?) are', r'ile \1 jest'),
+    (r'what number of (.*?) are', r'ile \1 jest')
   ]
 
   translations_mutable = [
@@ -245,7 +280,6 @@ def tr(t):
     ('of the other', 'innego'),
 
     ('there is another', 'na obrazku jest drugi'),
-    ('there is a ', 'na obrazku jest '),
 
     ('how many objects', 'ile przedmiotow'),
     ('how many objects', 'ile innych rzeczy'),
@@ -272,7 +306,6 @@ def tr(t):
       ('the ', ' '),
       ('of ', ' '),
       ('and', 'i'),
-      ('either', 'albo'),
       ('another', 'inny'),
       ('other', 'inny'),
       ('things', 'rzeczy'),
@@ -295,6 +328,7 @@ def tr(t):
 
   t = add_plural(t, forms)
   t = add_gen(t, forms)
+  t = add_inst(t, forms)
   uzgodnij(forms)
   uzgodnij_r_s(t, forms)
 
@@ -309,6 +343,7 @@ def tr(t):
   translations.extend(translations_two)
   translations.extend(translations_comparison)
   translations.extend(translations_compare_integer)
+  translations.extend(translations_single_or)
 
   for tns in (translations, translations2):
     for i, (trfrom, trto) in enumerate(list(tns)):
@@ -323,15 +358,15 @@ def tr(t):
     for trfrom, trto in tns:
       t = re.sub(trfrom, trto, t)
 
+  t = declinate_big(t, forms)
+  t = declinate_which(t, forms)
+
   new_params = []
   for param_prefix in ('W', 'F', 'I', 'J'):
-    new_params.extend(re.findall(r'<(%s\d*?).*>' % param_prefix, t))
+    new_params.extend(re.findall(r'<(%s\d*)>' % param_prefix, t))
   print(t)
   print(new_params)
   print()
-
-  t = declinate_big(t, forms)
-  t = declinate_which(t, forms)
 
   t = add_forms(t, forms)
 
@@ -346,7 +381,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('one_hop.json'): continue
+    if not fn.endswith('single_or.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -366,7 +401,7 @@ def main(args):
       templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 'one_hop.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', 'single_or.json'), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 

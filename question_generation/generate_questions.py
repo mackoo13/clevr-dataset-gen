@@ -635,7 +635,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('one_hop.json'): continue
+    if not fn.endswith('single_or.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       base = os.path.splitext(fn)[0]
       for i, template in enumerate(json.load(f)):
