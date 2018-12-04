@@ -212,7 +212,7 @@ def tr(t):
     ('of the same <feature> as the', 'tego samego <feature>u, co'),
     ('that is the same <feature> as the', '<W> jest tego samego <feature>u, co'),
     ('the same <feature> as the', 'tego samego <feature>u, co'),
-    ('what is its <feature>', 'jaki jest jego <feature>'),
+    ('what is its <feature>', 'jaki jest <J:case=,num=sg,gen=S2> <feature>'),
     ('what is the <feature> of the other', 'jaki jest <feature> innego'),
     ('what is the <feature> of', 'jaki jest <feature>'),
     ('what number of other objects are there of the same <feature> as the', 'ile przedmiotow ma ten sam <feature>, co'),
@@ -237,10 +237,10 @@ def tr(t):
     ('that is same color as the', '<W> jest tego samego koloru, co'),   # !
     ('that is the same color as the', '<W> jest tego samego koloru, co'),   # !
 
-    ('are there any other things', 'czy jest coo'),
+    ('are there any other things', 'czy jest coś'),
     ('is there another', 'czy jest inny'),
-    ('is there anything else', 'czy jest coo'),
-    ('is there any other thing', 'czy jest coo'),
+    ('is there anything else', 'czy jest coś'),
+    ('is there any other thing', 'czy jest coś'),
     ('are there any other', 'czy sa jakieo inne'),
     ('of the other', 'innego'),
 
@@ -324,7 +324,7 @@ def tr(t):
       t = re.sub(trfrom, trto, t)
 
   new_params = []
-  for param_prefix in ('W', 'F', 'I'):
+  for param_prefix in ('W', 'F', 'I', 'J'):
     new_params.extend(re.findall(r'<(%s\d*?).*>' % param_prefix, t))
   print(t)
   print(new_params)
@@ -361,7 +361,7 @@ def main(args):
       texts.append(translated)
       new_params_all.update(new_params)
 
-    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It'}
+    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its'}
     for param in new_params_all:
       templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
     templates[k]['text'] = texts

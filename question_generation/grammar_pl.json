@@ -48,6 +48,10 @@
 	"case=inst,num=sg,gen=m": "--nim",
 	"case=inst,num=sg,gen=f": "--nią"
   },
+  "jego": {
+	"case=,num=sg,gen=m": "",
+	"case=,num=sg,gen=f": "--j"
+  },
   "regular_endings": {
 	"case=nom,num=sg,gen=f": "-a",
 	"case=gen,num=sg,gen=m": "-ego",
