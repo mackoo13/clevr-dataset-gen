@@ -127,6 +127,20 @@ def declinate_big(t, forms):
 
   return t
 
+def declinate_its(t, forms):
+  words = t.split(' ')
+
+  first_s = None
+  for w in words:
+    if w.startswith('<S'):
+      first_s = get_token_name(w)
+      break
+
+  if first_s is not None:
+    forms['J'] = Form('case=,num=sg,gen=' + first_s)
+
+  return t
+
 def declinate_which(t, forms):
   t = t.replace('[', '')
   t = t.replace(']', '')
@@ -182,19 +196,20 @@ def tr(t):
     ('how many', 'ile'),
     ('what number of', 'ile'),
     ('is there a ', 'czy [na obrazku] jest '),
-    (r'How many (.*?) are there\?', r'Ile jest \1\?'),
-    (r'What number of (.*?) are there\?', r'Ile jest \1\?'),
-    (r'Are any (.*?) visible\?', r'Czy widać jakieś \1\?'),
+    (r'How many (.*?) are there\?', r'Ile jest \1?'),
+    (r'What number of (.*?) are there\?', r'Ile jest \1?'),
+    (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
   ]
 
   translations_one = [
-    (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
+    (r'There is a (.*?); what number of (.*?) are (.*?) it?',
      r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-    (r'There is a (.*?); how many (.*?) are (.*?) it\?',
-     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej\?'),
-    (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3\?'),
-    (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3\?'),
+    (r'There is a (.*?); how many (.*?) are (.*?) it?',
+     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
+    (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
+    (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
     ('; what is it made of?', '. Z czego jest zrobiony/a?'),
+    ('; what material is it made of?', '. Z jakiego materiału jest zrobiony/a?'),
   ]
 
   translations_two = [
@@ -202,9 +217,9 @@ def tr(t):
   ]
 
   translations_comparison = [
-    (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2\?'),
-    (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału\?'),
-    (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2\?'),
+    (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2?'),
+    (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
+    (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2?'),
     ('made of the same material as the', 'z tego samego materiału, co'),
   ]
 
@@ -224,14 +239,18 @@ def tr(t):
   ]
 
   translations_single_or = [
-    ('either', 'albo'),
-    ('or', 'albo'),
+    (r'\beither\b', 'albo'),
+    (r'\bor\b', 'albo'),
     (r'how many (.*?) things are', r'ile \1 rzeczy jest'),
     (r'what number of (.*?) things are', r'ile \1 rzeczy jest'),
     (r'how many (.*?) objects are', r'ile \1 obiektów jest'),
     (r'what number of (.*?) objects are', r'ile \1 obiektów jest'),
     (r'how many (.*?) are', r'ile \1 jest'),
     (r'what number of (.*?) are', r'ile \1 jest')
+  ]
+
+  translations_single_and = [
+    (r'\bboth\b', '')
   ]
 
   translations_mutable = [
@@ -263,7 +282,7 @@ def tr(t):
     ('does it', 'czy'),                                # wymuszaja liczbe
     ('do the', 'czy'),
 
-    (r'What is (.*?) made of\?', r'Z czego jest \1\?'),
+    (r'What is (.*?) made of\?', r'Z czego jest \1?'),
 
     ('are [made of] same material as', 'jest [zrobione] z tego samego materiału, co'),   # !
     ('that is [made of] same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
@@ -293,7 +312,7 @@ def tr(t):
     ('that is', '<W> jest'),                        # !
     ('that are', '<W> sa'),
 
-    ('how big is it', 'jaki jest <F>'),
+    ('how big is it', '<H:case=F,num=F,gen=F> jest <F>'),
     ('how big is', 'jak <F> jest'),
 
     # first words
@@ -344,6 +363,7 @@ def tr(t):
   translations.extend(translations_comparison)
   translations.extend(translations_compare_integer)
   translations.extend(translations_single_or)
+  translations.extend(translations_single_and)
 
   for tns in (translations, translations2):
     for i, (trfrom, trto) in enumerate(list(tns)):
@@ -359,11 +379,12 @@ def tr(t):
       t = re.sub(trfrom, trto, t)
 
   t = declinate_big(t, forms)
+  t = declinate_its(t, forms)
   t = declinate_which(t, forms)
 
   new_params = []
-  for param_prefix in ('W', 'F', 'I', 'J'):
-    new_params.extend(re.findall(r'<(%s\d*)>' % param_prefix, t))
+  for param_prefix in ('W', 'F', 'I', 'J', 'H'):
+    new_params.extend(re.findall(r'<(%s\d*).*?>' % param_prefix, t))
   print(t)
   print(new_params)
   print()
@@ -381,7 +402,7 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('single_or.json'): continue
+    if not fn.endswith('single_and.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -396,12 +417,12 @@ def main(args):
       texts.append(translated)
       new_params_all.update(new_params)
 
-    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its'}
+    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its', 'H': 'What_like'}
     for param in new_params_all:
       templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 'single_or.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', 'single_and.json'), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 

@@ -45,6 +45,10 @@
 	"case=nom,num=sg,gen=m": "",
 	"case=nom,num=sg,gen=f": "-a"
   },
+  "jaki": {
+	"case=nom,num=sg,gen=m": "",
+	"case=nom,num=sg,gen=f": "-a"
+  },
   "który": {
 	"case=nom,num=sg,gen=m": "",
 	"case=nom,num=sg,gen=f": "-a",
