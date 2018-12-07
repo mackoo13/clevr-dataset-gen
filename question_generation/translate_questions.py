@@ -119,6 +119,11 @@ def add_inst(t, forms):
 
   return t
 
+def handle_noun_cases(t, forms):
+  t = add_gen(t, forms)
+  t = add_inst(t, forms)
+  return t
+
 def declinate_big(t, forms):
   words = t.split(' ')
   num_s = len([w for w in words if w.startswith('<S')])
@@ -177,9 +182,9 @@ def uzgodnij_r_s(t, forms):
   last_r = None
   for i in range(len(words)):
     if words[i].startswith('<R'):
-      last_r = re.search(r'<(.*?)>', words[i]).group(1)
+      last_r = get_token_name(words[i])
     elif last_r is not None and words[i].startswith('<S'):
-      s_name = re.search(r'<(.*?)>', words[i]).group(1)
+      s_name = get_token_name(words[i])
       forms[s_name] = Form('case=' + last_r + ',num=sg,gen=')
     elif words[i] not in ['the'] and not words[i].startswith('<'):
       last_r = None
@@ -346,8 +351,7 @@ def tr(t):
   #   print(k, v.str())
 
   t = add_plural(t, forms)
-  t = add_gen(t, forms)
-  t = add_inst(t, forms)
+  t = handle_noun_cases(t, forms)
   uzgodnij(forms)
   uzgodnij_r_s(t, forms)
 
@@ -365,18 +369,14 @@ def tr(t):
   translations.extend(translations_single_or)
   translations.extend(translations_single_and)
 
-  for tns in (translations, translations2):
-    for i, (trfrom, trto) in enumerate(list(tns)):
-      if len(trto) == 0:
-        continue
-      tns.append((trfrom[0].upper() + trfrom[1:], trto[0].upper() + trto[1:]))
-
   translations = sorted(translations, key=lambda q: len(q[0]), reverse=True)
   # print('\n'.join([q[0] for q in translations]))
 
   for tns in (translations, translations2):
     for trfrom, trto in tns:
-      t = re.sub(trfrom, trto, t)
+      t = re.sub(trfrom, trto, t, flags=re.IGNORECASE)
+      if t[0].islower():
+        t = t[0].toupper() + t[1:]
 
   t = declinate_big(t, forms)
   t = declinate_its(t, forms)
