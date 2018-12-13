@@ -1,41 +1,48 @@
 {
   "rzecz": {
+	"case=nom,num=pl,gen=": "y",
 	"case=gen,num=sg,gen=": "y",
 	"case=gen,num=pl,gen=": "y",
 	"case=inst,num=sg,gen=": "ą",
 	"case=inst,num=pl,gen=": "ami"
   },
   "przedmiot": {
+	"case=nom,num=pl,gen=": "y",
 	"case=gen,num=sg,gen=": "u",
 	"case=gen,num=pl,gen=": "ów",
 	"case=inst,num=sg,gen=": "em",
 	"case=inst,num=pl,gen=": "ami"
   },
   "kostka": {
+	"case=nom,num=pl,gen=": "-i",
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "--ek",
 	"case=inst,num=sg,gen=": "-ą",
 	"case=inst,num=pl,gen=": "mi"
   },
   "kula": {
+	"case=nom,num=pl,gen=": "-e",
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "-",
 	"case=inst,num=sg,gen=": "-ą",
 	"case=inst,num=pl,gen=": "mi"
   },
   "kulka": {
+	"case=nom,num=pl,gen=": "-i",
 	"case=gen,num=sg,gen=": "-i",
 	"case=gen,num=pl,gen=": "--ek",
 	"case=inst,num=sg,gen=": "-ą",
 	"case=inst,num=pl,gen=": "mi"
   },
   "sześcian": {
+	"case=nom,num=pl,gen=": "y",
 	"case=gen,num=sg,gen=": "u",
 	"case=gen,num=pl,gen=": "ów",
 	"case=inst,num=sg,gen=": "em",
 	"case=inst,num=pl,gen=": "ami"
   },
   "walec": {
+	"case=nom,num=pl,gen=": "--ce",
 	"case=gen,num=sg,gen=": "--ca",
 	"case=gen,num=pl,gen=": "--ców",
 	"case=inst,num=sg,gen=": "--cem",
@@ -66,7 +73,11 @@
 	"case=,num=sg,gen=f": "--j"
   },
   "regular_endings": {
+	"case=nom,num=sg,gen=m": "",
 	"case=nom,num=sg,gen=f": "-a",
+	"case=nom,num=sg,gen=": "",
+	"case=nom,num=pl,gen=m": "-e",
+	"case=nom,num=pl,gen=f": "-e",
 	"case=gen,num=sg,gen=m": "-ego",
 	"case=gen,num=sg,gen=f": "-ej",
 	"case=gen,num=pl,gen=f": "ch",

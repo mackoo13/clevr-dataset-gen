@@ -7,6 +7,7 @@
 
 from __future__ import print_function
 import argparse, json, os
+import itertools
 import re
 
 class Form:
@@ -44,6 +45,53 @@ class Form:
 
   def is_final(self):
     return all([v.islower() or v == '' for v in self.props.values()])
+
+class NounInflector:
+  def __init__(self, t):
+    self.t = t
+
+  def inflect_big(self, forms):
+    words = self.t.split(' ')
+
+    num_s = len([w for w in words if w.startswith('<S')])
+    first_s_name = 'S' + str(num_s) if num_s > 1 else 'S'
+    forms['F'] = Form('case=' + first_s_name + ',num=' + first_s_name + ',gen=' + first_s_name)
+
+  def inflect_its(self, forms):
+    words = self.t.split(' ')
+
+    first_s = None
+    for w in words:
+      if w.startswith('<S'):
+        first_s = get_token_name(w)
+        break
+
+    if first_s is not None:
+      forms['J'] = Form('case=,num=sg,gen=' + first_s)
+
+  def inflect_which(self, forms):
+    self.t = self.t.replace('[', '')
+    self.t = self.t.replace(']', '')
+    words = self.t.split(' ')
+    current = 1
+    tokens = set()
+
+    for i in range(len(words)):
+      if words[i] == '<W>':
+        if current > 1:
+          words[i] = '<W' + str(current) + '>'
+        tokens.add(words[i])
+        current += 1
+
+    last_s = None
+    for i in range(len(words)):
+      if words[i].startswith('<S'):
+        last_s = get_token_name(words[i])
+      elif last_s is not None and words[i].startswith('<W'):
+        w_name = get_token_name(words[i])
+        forms[w_name] = Form('case=nom,num=' + last_s + ',gen=' + last_s)
+
+    self.t = ' '.join(words)
 
 parser = argparse.ArgumentParser()
 
@@ -124,60 +172,14 @@ def handle_noun_cases(t, forms):
   t = add_inst(t, forms)
   return t
 
-def declinate_big(t, forms):
-  words = t.split(' ')
-  num_s = len([w for w in words if w.startswith('<S')])
-  first_s_name = 'S' + str(num_s) if num_s > 1 else 'S'
-  forms['F'] = Form('case=' + first_s_name + ',num=' + first_s_name + ',gen=' + first_s_name)
-
-  return t
-
-def declinate_its(t, forms):
-  words = t.split(' ')
-
-  first_s = None
-  for w in words:
-    if w.startswith('<S'):
-      first_s = get_token_name(w)
-      break
-
-  if first_s is not None:
-    forms['J'] = Form('case=,num=sg,gen=' + first_s)
-
-  return t
-
-def declinate_which(t, forms):
-  t = t.replace('[', '')
-  t = t.replace(']', '')
-  words = t.split(' ')
-  current = 1
-  tokens = set()
-
-  for i in range(len(words)):
-    if words[i] == '<W>':
-      if current > 1:
-        words[i] = '<W' + str(current) + '>'
-      tokens.add(words[i])
-      current += 1
-
-  last_s = None
-  for i in range(len(words)):
-    if words[i].startswith('<S'):
-      last_s = re.search(r'<(.*?)>', words[i]).group(1)
-    elif last_s is not None and words[i].startswith('<W'):
-      w_name = re.search(r'<(.*?)>', words[i]).group(1)
-      forms[w_name] = Form('case=nom,num=' + last_s + ',gen=' + last_s)
-
-  return ' '.join(words)
-
-def uzgodnij(forms):
+def propagate_forms(forms):
   for i in range(1, 5):
     stri = '' if i == 1 else str(i)
     if 'S' + stri in forms:
       for name in ('Z', 'C', 'M'):
         forms[name + stri] = Form('case=S' + stri + ',num=S' + stri + ',gen=S' + stri)
 
-def uzgodnij_r_s(t, forms):
+def propagate_forms_r_s(t, forms):
   words = t.split(' ')
   last_r = None
   for i in range(len(words)):
@@ -195,93 +197,105 @@ def add_forms(t, forms):
   return t
 
 
-def tr(t):
-  translations_zero = [
-    ('are there any', 'czy są jakieś'),
-    ('how many', 'ile'),
-    ('what number of', 'ile'),
-    ('is there a ', 'czy [na obrazku] jest '),
-    (r'How many (.*?) are there\?', r'Ile jest \1?'),
-    (r'What number of (.*?) are there\?', r'Ile jest \1?'),
-    (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
-  ]
+def build_translations():
 
-  translations_one = [
-    (r'There is a (.*?); what number of (.*?) are (.*?) it?',
-     r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-    (r'There is a (.*?); how many (.*?) are (.*?) it?',
-     r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
-    (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-    (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-    ('; what is it made of?', '. Z czego jest zrobiony/a?'),
-    ('; what material is it made of?', '. Z jakiego materiału jest zrobiony/a?'),
-  ]
+  def build_feature_translations():
+    res = []
 
-  translations_two = [
-    ('there is a ', 'na obrazku jest '),
-  ]
+    feature_translations = [
+      ('are the same <feature> as', 'ma ten sam <feature> co'),
+      ('does it have the same <feature> as', 'czy ma ten sam <feature>, co'),
+      ('is it the same <feature> as', 'czy ma ten sam <feature>, co'),
+      ('is its <feature> the same as', 'czy ma ten sam <feature>, co'),
+      ('is what <feature>', 'jest jakiego <feature>u'),
+      ('has what <feature>', 'ma jaki <feature>'),
+      ('have same <feature> as', 'ma ten sam <feature> co'),
+      ('have the same <feature> as', 'ma ten sam <feature> co'),
+      ('have the same <feature>', 'maja ten sam <feature>'),
+      ('of the same <feature> as the', 'tego samego <feature>u, co'),
+      ('that is the same <feature> as the', '<W> jest tego samego <feature>u, co'),
+      ('the same <feature> as the', 'tego samego <feature>u, co'),
+      ('what is its <feature>', 'jaki jest <J:case=,num=sg,gen=S2> <feature>'),
+      ('what is the <feature> of the other', 'jaki jest <feature> innego'),
+      ('what is the <feature> of', 'jaki jest <feature>'),
+      ('what number of other objects are there of the same <feature> as the', 'ile przedmiotow ma ten sam <feature>, co'),
+      ('what <feature> is it', 'jaki ma <feature>'),
+      ('what <feature> is', 'jakiego <feature>u jest'),
+      ('what <feature> is the other', 'jaki <feature> ma inny'),
+      (r'Is the <feature> of', 'Czy <feature>'),
+    ]
 
-  translations_comparison = [
-    (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2?'),
-    (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
-    (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2?'),
-    ('made of the same material as the', 'z tego samego materiału, co'),
-  ]
+    for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'kształt'), ('material', 'materiał')):
+      for (trfrom, trto) in feature_translations:
+        trfrom = trfrom.replace('<feature>', f_en)
+        trto = trto.replace('<feature>', f_pl)
+        res.append((trfrom, trto))
 
-  translations_compare_integer = [
-    ('are there the same number of', 'czy jest taka sama liczba'),
-    ('are there an equal number of', 'czy jest tyle samo'),
-    ('is the number of', 'czy liczba'),
-    ('the same as the number of', 'taka sama jak'),
-    ('are there more', 'czy jest więcej'),
-    ('are there fewer', 'czy jest mniej'),
-    ('greater', 'jest większa'),
-    ('less', 'jest mniejsza'),
-    ('more', 'więcej'),
-    ('fewer', 'mniej'),
-    ('than', 'niż'),
-    (r'is the number of (.*?) the same as the number of (.*?)?', r'czy liczba \1 jest taka sama jak liczba \2?')
-  ]
+    return res
 
-  translations_single_or = [
-    (r'\beither\b', 'albo'),
-    (r'\bor\b', 'albo'),
-    (r'how many (.*?) things are', r'ile \1 rzeczy jest'),
-    (r'what number of (.*?) things are', r'ile \1 rzeczy jest'),
-    (r'how many (.*?) objects are', r'ile \1 obiektów jest'),
-    (r'what number of (.*?) objects are', r'ile \1 obiektów jest'),
-    (r'how many (.*?) are', r'ile \1 jest'),
-    (r'what number of (.*?) are', r'ile \1 jest')
-  ]
+  translations_dict = {
 
-  translations_single_and = [
-    (r'\bboth\b', '')
-  ]
+    'compare_integer': [
+      ('are there the same number of', 'czy jest taka sama liczba'),
+      ('are there an equal number of', 'czy jest tyle samo'),
+      ('is the number of', 'czy liczba'),
+      ('the same as the number of', 'taka sama jak'),
+      ('are there more', 'czy jest więcej'),
+      ('are there fewer', 'czy jest mniej'),
+      ('greater', 'jest większa'),
+      ('less', 'jest mniejsza'),
+      ('more', 'więcej'),
+      ('fewer', 'mniej'),
+      ('than', 'niż'),
+      (r'is the number of (.*?) the same as the number of (.*?)?', r'czy liczba \1 jest taka sama jak liczba \2?')
+    ],
+    'comparison': [
+      (r'Is the (.*?) the same size as the (.*?)?', r'Czy \1 jest tak samo duzy/duza, jak \2?'),
+      (r'Are the (.*?) and the (.*?) made of the same material?', r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
+      (r'Is the (.*?) made of the same material as the (.*?)?', r'Czy \1 i jest z tego samego materiału, co \2?'),
+      ('made of the same material as the', 'z tego samego materiału, co'),
+    ],
+    'one_hop': [
+      (r'There is a (.*?); what number of (.*?) are (.*?) it?',
+       r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
+      (r'There is a (.*?); how many (.*?) are (.*?) it?',
+       r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
+      (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
+      (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
+      ('; what is it made of?', '. Z czego jest zrobiony/a?'),
+      ('; what material is it made of?', '. Z jakiego materiału jest zrobiony/a?'),
+    ],
+    'same_relate': [
+    ],
+    'single_and': [
+      (r'\bboth\b', '')
+    ],
+    'single_or': [
+      (r'\beither\b', 'albo'),
+      (r'\bor\b', 'albo'),
+      (r'how many (.*?) things are', r'ile \1 rzeczy jest'),
+      (r'what number of (.*?) things are', r'ile \1 rzeczy jest'),
+      (r'how many (.*?) objects are', r'ile \1 obiektów jest'),
+      (r'what number of (.*?) objects are', r'ile \1 obiektów jest'),
+      (r'how many (.*?) are', r'ile \1 jest'),
+      (r'what number of (.*?) are', r'ile \1 jest')
+    ],
+    'three_hop': [
+    ],
+    'two_hop': [
+      ('there is a ', 'na obrazku jest '),
+    ],
+    'zero_hop': [
+      ('are there any', 'czy są jakieś'),
+      ('how many', 'ile'),
+      ('what number of', 'ile'),
+      ('is there a ', 'czy [na obrazku] jest '),
+      (r'How many (.*?) are there\?', r'Ile jest \1?'),
+      (r'What number of (.*?) are there\?', r'Ile jest \1?'),
+      (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
+    ],
 
-  translations_mutable = [
-    ('are the same <feature> as', 'ma ten sam <feature> co'),
-    ('does it have the same <feature> as', 'czy ma ten sam <feature>, co'),
-    ('is it the same <feature> as', 'czy ma ten sam <feature>, co'),
-    ('is its <feature> the same as', 'czy ma ten sam <feature>, co'),
-    ('is what <feature>', 'jest jakiego <feature>u'),
-    ('has what <feature>', 'ma jaki <feature>'),
-    ('have same <feature> as', 'ma ten sam <feature> co'),
-    ('have the same <feature> as', 'ma ten sam <feature> co'),
-    ('have the same <feature>', 'maja ten sam <feature>'),
-    ('of the same <feature> as the', 'tego samego <feature>u, co'),
-    ('that is the same <feature> as the', '<W> jest tego samego <feature>u, co'),
-    ('the same <feature> as the', 'tego samego <feature>u, co'),
-    ('what is its <feature>', 'jaki jest <J:case=,num=sg,gen=S2> <feature>'),
-    ('what is the <feature> of the other', 'jaki jest <feature> innego'),
-    ('what is the <feature> of', 'jaki jest <feature>'),
-    ('what number of other objects are there of the same <feature> as the', 'ile przedmiotow ma ten sam <feature>, co'),
-    ('what <feature> is it', 'jaki ma <feature>'),
-    ('what <feature> is', 'jakiego <feature>u jest'),
-    ('what <feature> is the other', 'jaki <feature> ma inny'),
-    (r'Is the <feature> of', 'Czy <feature>'),
-  ]
-
-  translations = [
+    'other': [
     ('same as', 'jest taki sam jak'),                                # !
     ('does the', 'czy'),                                # wymuszaja liczbe
     ('does it', 'czy'),                                # wymuszaja liczbe
@@ -300,7 +314,7 @@ def tr(t):
     ('is there another', 'czy jest inny'),
     ('is there anything else', 'czy jest coś'),
     ('is there any other thing', 'czy jest coś'),
-    ('are there any other', 'czy sa jakieo inne'),
+    ('are there any other', 'czy są jakieo inne'),
     ('of the other', 'innego'),
 
     ('there is another', 'na obrazku jest drugi'),
@@ -308,7 +322,7 @@ def tr(t):
     ('how many objects', 'ile przedmiotow'),
     ('how many objects', 'ile innych rzeczy'),
     ('what number of objects', 'ile przedmiotow'),
-    ('what number of other objects', 'ile innyh rzeczy'),
+    ('what number of other objects', 'ile innych rzeczy'),
     ('how many other things', 'ile rzeczy'),
     ('how many other objects', 'ile innych przedmiotow'),
     ('how many other', 'ile innych'),
@@ -324,20 +338,35 @@ def tr(t):
     ('Is', 'Czy'),
     ('Are', 'Czy'),
   ]
+  }
+
+  translations_dict['other'].extend(build_feature_translations())
 
   translations2 = [
-      ('number', 'liczba'),
-      ('the ', ' '),
-      ('of ', ' '),
-      ('and', 'i'),
-      ('another', 'inny'),
-      ('other', 'inny'),
-      ('things', 'rzeczy'),
-      ('size', 'rozmiar'),
-      ('color', 'kolor'),
-      ('shape', 'ksztalt'),
-      ('material', 'materiał'),
+    ('number', 'liczba'),
+    ('the ', ' '),
+    ('of ', ' '),
+    ('and', 'i'),
+    ('another', 'inny'),
+    ('other', 'inny'),
+    ('things', 'rzeczy'),
+    ('objects', 'rzeczy'),
+    ('size', 'rozmiar'),
+    ('color', 'kolor'),
+    ('shape', 'ksztalt'),
+    ('material', 'materiał'),
   ]
+
+  translations = itertools.chain(translations_dict.values())
+
+  translations = sorted(translations, key=lambda q: len(q[0]), reverse=True)
+  translations.extend(translations2)
+
+  return translations
+
+
+def translate(t):
+  translations = build_translations()
 
   forms = {}
   tokens = re.findall(r'<(.*?)>', t)
@@ -347,40 +376,23 @@ def tr(t):
     else:
       forms[token] = Form('case=nom,num=sg,gen=')
 
-  # for k, v in forms.items():
-  #   print(k, v.str())
 
   t = add_plural(t, forms)
   t = handle_noun_cases(t, forms)
-  uzgodnij(forms)
-  uzgodnij_r_s(t, forms)
+  propagate_forms(forms)
+  propagate_forms_r_s(t, forms)
 
-  for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'kształt'), ('material', 'materiał')):
-    for (trfrom, trto) in translations_mutable:
-      trfrom = trfrom.replace('<feature>', f_en)
-      trto = trto.replace('<feature>', f_pl)
-      translations.append((trfrom, trto))
+  inflector = NounInflector(t)
+  inflector.inflect_big(forms)
+  inflector.inflect_its(forms)
+  inflector.inflect_which(forms)
+  t = inflector.t
 
-  translations.extend(translations_zero)
-  translations.extend(translations_one)
-  translations.extend(translations_two)
-  translations.extend(translations_comparison)
-  translations.extend(translations_compare_integer)
-  translations.extend(translations_single_or)
-  translations.extend(translations_single_and)
-
-  translations = sorted(translations, key=lambda q: len(q[0]), reverse=True)
-  # print('\n'.join([q[0] for q in translations]))
-
-  for tns in (translations, translations2):
+  for tns in translations:
     for trfrom, trto in tns:
       t = re.sub(trfrom, trto, t, flags=re.IGNORECASE)
       if t[0].islower():
-        t = t[0].toupper() + t[1:]
-
-  t = declinate_big(t, forms)
-  t = declinate_its(t, forms)
-  t = declinate_which(t, forms)
+        t = t[0].upper() + t[1:]
 
   new_params = []
   for param_prefix in ('W', 'F', 'I', 'J', 'H'):
@@ -392,7 +404,7 @@ def tr(t):
   t = add_forms(t, forms)
 
   t = re.sub(r'^ ', '', t)
-  t = re.sub('  ', ' ', t)
+  t = re.sub(' {2}', ' ', t)
   t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
 
   return t, new_params
@@ -401,8 +413,9 @@ def tr(t):
 def main(args):
   num_loaded_templates = 0
   templates = {}
+  fn = 'two_hop.json'
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('single_and.json'): continue
+    if not fn.endswith(fn): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
@@ -413,7 +426,7 @@ def main(args):
     texts = []
     new_params_all = set()
     for i, t in enumerate(v['text']):
-      translated, new_params = tr(t)
+      translated, new_params = translate(t)
       texts.append(translated)
       new_params_all.update(new_params)
 
@@ -422,7 +435,7 @@ def main(args):
       templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
     templates[k]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', 'single_and.json'), 'w') as fout:
+  with open(os.path.join(args.template_dir + '_pl', fn), 'w') as fout:
     fout.write(json.dumps(list(templates.values())))
 
 

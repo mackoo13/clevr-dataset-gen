@@ -73,10 +73,10 @@ parser.add_argument('--num_scenes', default=10, type=int,
 
 # Control the number of questions per image; we will attempt to generate
 # templates_per_image * instances_per_template questions per image.
-parser.add_argument('--templates_per_image', default=10, type=int,
+parser.add_argument('--templates_per_image', default=100, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
-parser.add_argument('--instances_per_template', default=10, type=int,
+parser.add_argument('--instances_per_template', default=2, type=int,
     help="The number of times each template should be instantiated on an image")
 
 # Misc
@@ -492,6 +492,8 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
 
     tokens = re.findall(r'<(.*?):?([^:]*?)>', text)
     for (name, form) in tokens:
+      if name == '':
+        continue
       forms[name] = Form(form)
       name_tag = '<'+name+'>'
       if name_tag not in state['vals'].keys():
@@ -544,7 +546,7 @@ def declinate(word, form, grammar):
   elif form_str in grammar['regular_endings']:
     ending = grammar['regular_endings'][form_str]
   else:
-    # print(word, form.str(), 'not found!')
+    print('Warning:', word, form.str(), 'not found!')
     return word
   
   ending_letters = ending.replace('-', '')
@@ -635,13 +637,14 @@ def main(args):
   num_loaded_templates = 0
   templates = {}
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith('single_and.json'): continue
+    if not fn.endswith('.json'): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
       base = os.path.splitext(fn)[0]
       for i, template in enumerate(json.load(f)):
         num_loaded_templates += 1
         key = (fn, i)
         templates[key] = template
+
   print('Read %d templates from disk' % num_loaded_templates)
 
   def reset_counts():
@@ -773,11 +776,16 @@ def main(args):
 
   with open(args.output_questions_file, 'w', encoding='utf8') as f:
     print('Writing output to %s' % args.output_questions_file)
-    print('\n'.join([q['question'] for q in questions]))
+    # print('\n'.join([q['question'] for q in questions]))
     json.dump({
         'info': scene_info,
         'questions': questions,
       }, f)
+
+  with open('../output/raw.txt', 'w', encoding='utf8') as f:
+    for q, tid in zip(questions, templates.keys()):
+      f.write(q['question'])
+      f.write('\n')
 
 
 if __name__ == '__main__':
