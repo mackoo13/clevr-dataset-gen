@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='D:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
