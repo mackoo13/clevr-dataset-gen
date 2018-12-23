@@ -1,14 +1,9 @@
-# Copyright 2017-present, Facebook, Inc.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
-
 from __future__ import print_function
 import argparse, json, os
 import itertools
 import re
+
+param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its', 'H': 'What_like', 'D': 'Made'}
 
 class Form:
   def __init__(self, s):
@@ -46,7 +41,7 @@ class Form:
   def is_final(self):
     return all([v.islower() or v == '' for v in self.props.values()])
 
-class NounInflector:
+class WordInflector:
   def __init__(self, t):
     self.t = t
 
@@ -93,6 +88,100 @@ class NounInflector:
 
     self.t = ' '.join(words)
 
+  def inflect_all(self, forms):
+    self.inflect_big(forms)
+    self.inflect_its(forms)
+    self.inflect_which(forms)
+    return self.t
+
+class FormDetector:
+  def __init__(self, t):
+    self.t = t
+
+  def add_plural(self, forms):
+    words = self.t.split(' ')
+    for i in range(len(words)):
+      if words[i].endswith('>s'):
+        name = words[i][1:-2]
+        forms[name].props['num'] = 'pl'
+        words[i] = words[i][:-1]
+      elif words[i].endswith('>s?'):       # todo
+        name = words[i][1:-3]
+        forms[name].props['num'] = 'pl'
+        words[i] = words[i][:-2] + '?'
+
+      if words[i] in ('many', 'more', 'fewer', 'than'):
+        for j in range(i+1, len(words)):
+          if words[j] == 'the':
+            continue
+          token = re.search(r'<(.*?)>', words[j])
+          if token is None:
+            break
+          name = token.group(1)
+          if not name.startswith('S'):
+            continue
+          forms[name].props['num'] = 'pl'
+
+    self.t = ' '.join(words)
+
+  def add_gen(self, forms):
+    words = self.t.split(' ')
+    for i in range(len(words)):
+      if words[i] in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', words[i]):
+        for j in range(i+1, len(words)):
+          if words[j] == 'the':
+            continue
+          name = get_token_name(words[j])
+          if name is None:
+            break
+          if not name.startswith('S'):
+            continue
+          forms[name].props['case'] = 'gen'
+
+  def add_inst(self, forms):
+    words = self.t.split(' ')
+    for i in range(len(words)):
+      if words[i] == 'are':
+        for j in range(i+1, len(words)):
+          name = get_token_name(words[j])
+          if name is not None and name.startswith('R'):
+            break
+
+          if name is None or not name.startswith('S'):
+            continue
+
+          forms[name].props['case'] = 'inst'
+          forms[name].props['num'] = 'pl'
+
+  def propagate_forms(self, forms):
+    for i in range(1, 5):
+      stri = '' if i == 1 else str(i)
+      if 'S' + stri in forms:
+        for name in ('Z', 'C', 'M'):
+          forms[name + stri] = Form('case=S' + stri + ',num=S' + stri + ',gen=S' + stri)
+
+  def propagate_forms_r_s(self, forms):
+    words = self.t.split(' ')
+    last_r = None
+    for i in range(len(words)):
+      if words[i].startswith('<R'):
+        last_r = get_token_name(words[i])
+      elif last_r is not None and words[i].startswith('<S'):
+        s_name = get_token_name(words[i])
+        forms[s_name] = Form('case=' + last_r + ',num=sg,gen=')
+      elif words[i] not in ['the'] and not words[i].startswith('<'):
+        last_r = None
+
+  def add_all(self, forms):
+    self.add_plural(forms)
+    self.add_gen(forms)
+    self.add_inst(forms)
+    self.propagate_forms(forms)
+    self.propagate_forms_r_s(forms)
+    return self.t
+
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--template_dir', default='CLEVR_1.0_templates',
@@ -107,89 +196,6 @@ def get_token_name(word):
     return None
   name = token.group(1)
   return name
-
-def add_plural(t, forms):
-  words = t.split(' ')
-  for i in range(len(words)):
-    if words[i].endswith('>s'):
-      name = words[i][1:-2]
-      forms[name].props['num'] = 'pl'
-      words[i] = words[i][:-1]
-    elif words[i].endswith('>s?'):       # todo
-      name = words[i][1:-3]
-      forms[name].props['num'] = 'pl'
-      words[i] = words[i][:-2] + '?'
-
-    if words[i] in ('many', 'more', 'fewer', 'than'):
-      for j in range(i+1, len(words)):
-        if words[j] == 'the':
-          continue
-        token = re.search(r'<(.*?)>', words[j])
-        if token is None:
-          break
-        name = token.group(1)
-        if not name.startswith('S'):
-          continue
-        forms[name].props['num'] = 'pl'
-
-  return ' '.join(words)
-
-def add_gen(t, forms):
-  words = t.split(' ')
-  for i in range(len(words)):
-    if words[i] in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', words[i]):
-      for j in range(i+1, len(words)):
-        if words[j] == 'the':
-          continue
-        name = get_token_name(words[j])
-        if name is None:
-          break
-        if not name.startswith('S'):
-          continue
-        forms[name].props['case'] = 'gen'
-
-  return t
-
-def add_inst(t, forms):
-  words = t.split(' ')
-  for i in range(len(words)):
-    if words[i] == 'are':
-      for j in range(i+1, len(words)):
-        name = get_token_name(words[j])
-        if name is not None and name.startswith('R'):
-          break
-
-        if name is None or not name.startswith('S'):
-          continue
-
-        forms[name].props['case'] = 'inst'
-        forms[name].props['num'] = 'pl'
-
-  return t
-
-def handle_noun_cases(t, forms):
-  t = add_gen(t, forms)
-  t = add_inst(t, forms)
-  return t
-
-def propagate_forms(forms):
-  for i in range(1, 5):
-    stri = '' if i == 1 else str(i)
-    if 'S' + stri in forms:
-      for name in ('Z', 'C', 'M'):
-        forms[name + stri] = Form('case=S' + stri + ',num=S' + stri + ',gen=S' + stri)
-
-def propagate_forms_r_s(t, forms):
-  words = t.split(' ')
-  last_r = None
-  for i in range(len(words)):
-    if words[i].startswith('<R'):
-      last_r = get_token_name(words[i])
-    elif last_r is not None and words[i].startswith('<S'):
-      s_name = get_token_name(words[i])
-      forms[s_name] = Form('case=' + last_r + ',num=sg,gen=')
-    elif words[i] not in ['the'] and not words[i].startswith('<'):
-      last_r = None
 
 def add_forms(t, forms):
   for k, v in forms.items():
@@ -256,17 +262,17 @@ def build_translations():
       ('made of the same material as the', 'z tego samego materiału, co'),
     ],
     'one_hop': [
-      (r'There is a (.*?); what number of (.*?) are (.*?) it?',
+      (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
        r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-      (r'There is a (.*?); how many (.*?) are (.*?) it?',
-       r'Na obrazku jest \1. Ile \2 jest \3 niego/nim/nia/niej?'),
+      (r'There is a (.*?); how many (.*?) are (.*?) it\?',
+       r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
       (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-      (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-      ('; what is it made of?', '. Z czego jest zrobiony/a?'),
-      ('; what material is it made of?', '. Z jakiego materiału jest zrobiony/a?'),
+      (r'How many (<.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
+      ('; what is it made of?', '. Z czego jest <D:case=R,num=sg,gen=S>?'),
+      ('; what material is it made of?', '. Z jakiego materiału jest <D:case=R,num=sg,gen=S>?'),
     ],
-    'same_relate': [
-    ],
+    # 'same_relate': [
+    # ],
     'single_and': [
       (r'\bboth\b', '')
     ],
@@ -277,11 +283,11 @@ def build_translations():
       (r'what number of (.*?) things are', r'ile \1 rzeczy jest'),
       (r'how many (.*?) objects are', r'ile \1 obiektów jest'),
       (r'what number of (.*?) objects are', r'ile \1 obiektów jest'),
-      (r'how many (.*?) are', r'ile \1 jest'),
+      (r'how many (<.*?) are', r'ile \1 jest'),
       (r'what number of (.*?) are', r'ile \1 jest')
     ],
-    'three_hop': [
-    ],
+    # 'three_hop': [
+    # ],
     'two_hop': [
       ('there is a ', 'na obrazku jest '),
     ],
@@ -296,53 +302,52 @@ def build_translations():
     ],
 
     'other': [
-    ('same as', 'jest taki sam jak'),                                # !
-    ('does the', 'czy'),                                # wymuszaja liczbe
-    ('does it', 'czy'),                                # wymuszaja liczbe
-    ('do the', 'czy'),
+      ('same as', 'jest taki sam jak'),
+      ('does the', 'czy'),
+      ('does it', 'czy'),
+      ('do the', 'czy'),
 
-    (r'What is (.*?) made of\?', r'Z czego jest \1?'),
+      (r'What is (.*?) made of\?', r'Z czego jest \1?'),
 
-    ('are [made of] same material as', 'jest [zrobione] z tego samego materiału, co'),   # !
-    ('that is [made of] same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
-    ('that is [made of] the same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
+      ('are [made of] same material as', 'jest [zrobione] z tego samego materiału, co'),   # !
+      ('that is [made of] same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
+      ('that is [made of] the same material as', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
 
-    ('that is same color as the', '<W> jest tego samego koloru, co'),   # !
-    ('that is the same color as the', '<W> jest tego samego koloru, co'),   # !
+      ('that is same color as the', '<W> jest tego samego koloru, co'),   # !
+      ('that is the same color as the', '<W> jest tego samego koloru, co'),   # !
 
-    ('are there any other things', 'czy jest coś'),
-    ('is there another', 'czy jest inny'),
-    ('is there anything else', 'czy jest coś'),
-    ('is there any other thing', 'czy jest coś'),
-    ('are there any other', 'czy są jakieo inne'),
-    ('of the other', 'innego'),
+      ('are there any other things', 'czy jest coś'),
+      ('is there another', 'czy jest inny'),
+      ('is there anything else', 'czy jest coś'),
+      ('is there any other thing', 'czy jest coś'),
+      ('are there any other', 'czy są jakieo inne'),
+      ('of the other', 'innego'),
 
-    ('there is another', 'na obrazku jest drugi'),
+      ('there is another', 'na obrazku jest drugi'),
 
-    ('how many objects', 'ile przedmiotow'),
-    ('how many objects', 'ile innych rzeczy'),
-    ('what number of objects', 'ile przedmiotow'),
-    ('what number of other objects', 'ile innych rzeczy'),
-    ('how many other things', 'ile rzeczy'),
-    ('how many other objects', 'ile innych przedmiotow'),
-    ('how many other', 'ile innych'),
-    ('what number of other', 'ile innych'),
+      ('how many objects', 'ile przedmiotow'),
+      ('what number of objects', 'ile przedmiotow'),
+      ('what number of other objects', 'ile innych rzeczy'),
+      ('how many other things', 'ile rzeczy'),
+      ('how many other objects', 'ile innych przedmiotów'),
+      ('how many other', 'ile innych'),
+      ('what number of other', 'ile innych'),
 
-    ('that is', '<W> jest'),                        # !
-    ('that are', '<W> sa'),
+      ('that is', '<W> jest'),                        # !
+      ('that are', '<W> są'),
 
-    ('how big is it', '<H:case=F,num=F,gen=F> jest <F>'),
-    ('how big is', 'jak <F> jest'),
+      ('how big is it', '<H:case=F,num=F,gen=F> jest <F>'),
+      ('how big is', 'jak <F> jest'),
 
-    # first words
-    ('Is', 'Czy'),
-    ('Are', 'Czy'),
-  ]
+      # first words
+      (r'^Is', 'Czy'),
+      (r'^Are', 'Czy'),
+    ]
   }
 
   translations_dict['other'].extend(build_feature_translations())
 
-  translations2 = [
+  translations2 = [[
     ('number', 'liczba'),
     ('the ', ' '),
     ('of ', ' '),
@@ -355,7 +360,7 @@ def build_translations():
     ('color', 'kolor'),
     ('shape', 'ksztalt'),
     ('material', 'materiał'),
-  ]
+  ]]
 
   translations = itertools.chain(translations_dict.values())
 
@@ -376,17 +381,8 @@ def translate(t):
     else:
       forms[token] = Form('case=nom,num=sg,gen=')
 
-
-  t = add_plural(t, forms)
-  t = handle_noun_cases(t, forms)
-  propagate_forms(forms)
-  propagate_forms_r_s(t, forms)
-
-  inflector = NounInflector(t)
-  inflector.inflect_big(forms)
-  inflector.inflect_its(forms)
-  inflector.inflect_which(forms)
-  t = inflector.t
+  t = FormDetector(t).add_all(forms)
+  t = WordInflector(t).inflect_all(forms)
 
   for tns in translations:
     for trfrom, trto in tns:
@@ -394,9 +390,9 @@ def translate(t):
       if t[0].islower():
         t = t[0].upper() + t[1:]
 
-  new_params = []
-  for param_prefix in ('W', 'F', 'I', 'J', 'H'):
-    new_params.extend(re.findall(r'<(%s\d*).*?>' % param_prefix, t))
+  new_params = set()
+  for param_prefix in param_types.keys():
+    new_params.update(re.findall(r'<(%s\d*).*?>' % param_prefix, t))
   print(t)
   print(new_params)
   print()
@@ -411,32 +407,30 @@ def translate(t):
 
 
 def main(args):
-  num_loaded_templates = 0
   templates = {}
-  fn = 'two_hop.json'
+  fname = '.json'
   for fn in os.listdir(args.template_dir):
-    if not fn.endswith(fn): continue
+    if not fn.endswith(fname): continue
     with open(os.path.join(args.template_dir, fn), 'r') as f:
+      templates[fn] = []
       for i, template in enumerate(json.load(f)):
-        num_loaded_templates += 1
-        key = (fn, i)
-        templates[key] = template
+        templates[fn].append(template)
 
-  for k, v in templates.items():
-    texts = []
-    new_params_all = set()
-    for i, t in enumerate(v['text']):
-      translated, new_params = translate(t)
-      texts.append(translated)
-      new_params_all.update(new_params)
+  for fn, file_templates in templates.items():
+    for ti, v in enumerate(file_templates):
+      texts = []
+      new_params_all = set()
+      for i, t in enumerate(v['text']):
+        translated, new_params = translate(t)
+        texts.append(translated)
+        new_params_all.update(new_params)
 
-    param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its', 'H': 'What_like'}
-    for param in new_params_all:
-      templates[k]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
-    templates[k]['text'] = texts
+      for param in new_params_all:
+        file_templates[ti]['params'].append({'type': (param_types[param[0]]), 'name': '<' + param + '>'})
+      file_templates[ti]['text'] = texts
 
-  with open(os.path.join(args.template_dir + '_pl', fn), 'w') as fout:
-    fout.write(json.dumps(list(templates.values())))
+    with open(os.path.join(args.template_dir + '_pl', fn), 'w') as fout:
+      fout.write(json.dumps(file_templates))
 
 
 if __name__ == '__main__':

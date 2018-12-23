@@ -45,7 +45,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='D:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -66,7 +66,7 @@ parser.add_argument('--output_questions_file',
 parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=10, type=int,
+parser.add_argument('--num_scenes', default=1, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
@@ -512,15 +512,21 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
       word = random.choice(synonyms[word])
       vals.append((name, word))
 
+    failed_attempts = 0
     while len(vals) > 0:
+      if failed_attempts > len(vals):
+        raise Exception('Infinite loop')
+
       name, word = vals.pop(0)
 
       form = forms[name]
       form.eval(forms)
       if not form.is_final():
         vals.append((name, word))
-        # print(name, word, form.str(), text, '\n\n')
+        failed_attempts += 1
         continue
+      else:
+        failed_attempts = 0
 
       text = re.sub(r'<%s:([^:]*?)>' % name, declinate(word, form, grammar), text)
       if word in grammar['dependent_forms']:
