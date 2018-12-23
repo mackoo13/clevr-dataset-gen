@@ -552,7 +552,7 @@ def declinate(word, form, grammar):
   elif form_str in grammar['regular_endings']:
     ending = grammar['regular_endings'][form_str]
   else:
-    print('Warning:', word, form.str(), 'not found!')
+    # print('Warning:', word, form.str(), 'not found!')
     return word
   
   ending_letters = ending.replace('-', '')
