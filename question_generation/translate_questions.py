@@ -126,8 +126,12 @@ class FormDetector:
 
   def add_gen(self, forms):
     words = self.t.split(' ')
+    feature_names = ('color', 'shape', 'material')
+
     for i in range(len(words)):
-      if words[i] in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', words[i]):
+      if (words[i] in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', words[i]))\
+          or (words[0] == 'Is' and (words[1] in feature_names or words[2] in feature_names) and words[i] == 'as')\
+          or ((self.t.startswith('Are there the same number of') or self.t.startswith('Are there the same number of')) and words[i] == 'and'):
         for j in range(i+1, len(words)):
           if words[j] in ('the', 'other'):
             continue
@@ -138,9 +142,6 @@ class FormDetector:
             continue
           forms[name].props['case'] = 'gen'
 
-    feature_names = ('color', 'shape', 'material')
-    if words[0] == 'Is' and words[1] in feature_names or words[2] in feature_names:
-      pass # todo
 
   def add_inst(self, forms):
     words = self.t.split(' ')
@@ -148,10 +149,10 @@ class FormDetector:
       if words[i] == 'are':
         for j in range(i+1, len(words)):
           name = get_token_name(words[j])
-          if name is not None and name.startswith('R'):
+          if name is None or name.startswith('R'):
             break
 
-          if name is None or not name.startswith('S'):
+          if not name.startswith('S'):
             continue
 
           forms[name].props['case'] = 'inst'
@@ -228,8 +229,6 @@ def build_translations():
       (r'what is its <feature>', r'jaki jest <J:case=,num=sg,gen=S2> <feature>'),
       (r'what is the <feature> of the other', r'jaki jest <feature> innego'),
       (r'what is the <feature> of', r'jaki jest <feature>'),
-      (r'what number of other objects are there of the same <feature> as the', 
-       r'ile przedmiotow ma ten sam <feature>, co'),
       (r'what <feature> is it', r'jaki ma <feature>'),
       (r'what <feature> is', r'jakiego <feature>u jest'),
       (r'what <feature> is the other', r'jaki <feature> ma inny'),
@@ -310,20 +309,22 @@ def build_translations():
       (r'\bthere is a\b', r'na obrazku jest'),
     ],
     'zero_hop': [
-      (r'\bare there any\b', 'czy są jakieś'),
-      (r'\bhow many\b', 'ile'),
-      (r'\bwhat number of\b', 'ile'),
-      (r'\bis there a\b', 'czy [na obrazku] jest '),
+      (r'are there any other', 'czy są jakieś inne'),
+      (r'are there any', 'czy są jakieś'),
+      (r'how many', 'ile'),
+      (r'what number of', 'ile'),
+      (r'is there a\b', 'czy [na obrazku] jest '),
       (r'How many (.*?) are there\?', r'Ile jest \1?'),
       (r'What number of (.*?) are there\?', r'Ile jest \1?'),
       (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
     ],
 
     'other': [
-      (r'\bsame as\b', 'jest taki sam jak'),
-      (r'\bdoes the\b', 'czy'),
-      (r'\bdoes it\b', 'czy'),
-      (r'\bdo the\b', 'czy'),
+      (r'same as', 'jest taki sam jak'),
+      (r'does the', 'czy'),
+      (r'does it', 'czy'),
+      (r'do the', 'czy'),
+      (r'are there', 'jest'),
 
       (r'What is (.*?) made of\?', r'Z czego jest \1?'),
 
@@ -340,18 +341,20 @@ def build_translations():
       (r'\bis there another', 'czy jest inny'),
       (r'\bis there anything else', 'czy jest coś'),
       (r'\bis there any other thing', 'czy jest coś'),
-      (r'\bare there any other', 'czy są jakieo inne'),
+      (r'\bare there any other', 'czy są jakieś inne'),
       (r'\bof the other', 'innego'),
 
       (r'\bthere is another', 'na obrazku jest drugi'),
 
       (r'^How many objects', 'ile przedmiotów'),
       (r'^What number of objects', 'ile przedmiotów'),
-      (r'^What number of other objects', 'ile innych rzeczy'),
-      (r'^How many other things', 'ile rzeczy'),
+      (r'^How many things', 'ile rzeczy'),
+      (r'^What number of things', 'ile rzeczy'),
+
       (r'^How many other objects', 'ile innych przedmiotów'),
-      (r'^How many other', 'ile innych'),
-      (r'^What number of other', 'ile innych'),
+      (r'^What number of other objects', 'ile innych przedmiotów'),
+      (r'^How many other things', 'ile innych rzeczy'),
+      (r'^What number of other things', 'ile innych rzeczy'),
 
       (r'\bthat is', '<W> jest'),
       (r'\bthat are', '<W> są'),
