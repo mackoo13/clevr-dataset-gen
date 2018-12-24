@@ -238,8 +238,8 @@ class Translator:
         (r'is what <feature>', r'jest jakiego <feature>u'),
         (r'has what <feature>', r'ma jaki <feature>'),
         (r'has the same <feature>', r'ma ten sam <feature>'),
-        (r'have same <feature>\?', r'mają ten sam <feature>?'),
-        (r'have the same <feature>\?', r'mają ten sam <feature>?'),
+        (r'have same <feature>', r'mają ten sam <feature>'),
+        (r'have the same <feature>', r'mają ten sam <feature>'),
         (r'of the same <feature> as the', r'tego samego <feature>u, co'),
         (r'that is the same <feature> as the', r'<W> jest tego samego <feature>u, co'),
         (r'the same <feature> as the', r'tego samego <feature>u, co'),
@@ -273,7 +273,7 @@ class Translator:
         (r'\bare there the same number of', r'czy jest taka sama liczba'),
         (r'\bare there an equal number of', r'czy jest tyle samo'),
         (r'\bis the number of', r'czy liczba'),
-        (r'\bthe same as the number of', r'taka sama jak'),
+        (r'\bthe same as the number of', r'jest taka sama jak'),
         (r'\bare there more', r'czy jest więcej'),
         (r'\bare there fewer', r'czy jest mniej'),
         (r'\bgreater', r'jest większa'),
@@ -281,14 +281,14 @@ class Translator:
         (r'\bmore', r'więcej'),
         (r'\bfewer', r'mniej'),
         (r'\bthan', r'niż'),
-        (r'\bis the number of (.*?) the same as the number of (.*?)?', r'czy liczba \1 jest taka sama jak liczba \2?')
+        (r'\bis the number of (.*?) the same as the number of (.*?)\?', r'czy liczba \1 jest taka sama jak liczba \2?')
       ],
       'comparison': [
-        (r'Is the (.*?) the same size as the (.*?)?',
+        (r'Is the (.*?) the same size as the (.*?)\?',
          r'Czy \1 jest tak samo <F>, jak \2?'),
-        (r'Are the (.*?) and the (.*?) made of the same material?',
+        (r'Are the (.*?) and the (.*?) made of the same material\?',
          r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
-        (r'Is the (.*?) made of the same material as the (.*?)?',
+        (r'Is the (.*?) made of the same material as the (.*?)\?',
          r'Czy \1 i jest z tego samego materiału, co \2?'),
         (r'made of the same material as the',
          r'z tego samego materiału, co'),
@@ -305,7 +305,11 @@ class Translator:
       ],
       'same_relate': [
         (r'^How many other\b', r'Ile innych'),
-        (r'^What number of other\b', r'Ile innych')
+        (r'^What number of other\b', r'Ile innych'),
+        (r'How many other (.*?) have the same', r'Ile innych \1 ma ten sam'),
+        (r'How many other (.*?) are the same', r'Ile innych \1 ma ten sam'),
+        (r'What number of other (.*?) have the same', r'Ile innych \1 ma ten sam'),
+        (r'What number of other (.*?) are the same', r'Ile innych \1 ma ten sam')
       ],
       'single_and': [
         (r'\bboth\b', '')
@@ -357,7 +361,7 @@ class Translator:
         (r'\bare there any other things', 'czy jest coś'),
         (r'\bis there another', 'czy jest inny'),
         (r'\bis there anything else', 'czy jest coś'),
-        (r'\bis there any other thing', 'czy jest coś'),
+        (r'\bis there any other thing that', 'czy jest coś co'),
         (r'\bare there any other', 'czy są jakieś inne'),
         (r'\bof the other', 'innego'),
 
@@ -442,8 +446,9 @@ class Translator:
     self.t = re.sub(r'^ ', '', self.t)
     self.t = re.sub(' {2}', ' ', self.t)
     self.t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', self.t)
-    self.t = re.sub(r' któr', ', któr', self.t)
-    self.t = re.sub(r' niż\b', ', niż', self.t)
+    self.t = re.sub(r'(?<!,) któr', ', któr', self.t)
+    self.t = re.sub(r'(?<!,) niż\b', ', niż', self.t)
+    self.t = re.sub(r'(?<!,) co\b', ', co', self.t)   # todo double comme
 
     return self.t, new_params
 
