@@ -3,7 +3,13 @@ import argparse, json, os
 import itertools
 import re
 
-param_types = {'W': 'Which', 'F': 'Big', 'I': 'It', 'J': 'Its', 'H': 'What_like', 'D': 'Made'}
+param_types = {'D': 'Made',
+               'F': 'Big',
+               'H': 'What_like',
+               'I': 'It',
+               'J': 'Its',
+               'O': 'Other',
+               'W': 'Which'}
 
 class Form:
   def __init__(self, props):
@@ -122,9 +128,8 @@ class FormDetector:
           name = get_token_name(w2)
           if name is None:
             break
-          if not name.startswith('S'):
-            continue
-          self.forms[name].props['num'] = 'pl'
+          if name.startswith('S') or name.startswith('O'):
+            self.forms[name].props['num'] = 'pl'
 
     self.t = ' '.join(words)
 
@@ -133,18 +138,19 @@ class FormDetector:
     feature_names = ('color', 'shape', 'material', 'size')
 
     for i, w in enumerate(words):
-      if (w in ('of', 'many', 'more', 'fewer', 'than') or re.match(r'<R\d*>', w))\
-          or (words[0] == 'Is' and (words[1] in feature_names or words[2] in feature_names) and w == 'as')\
-          or ((self.t.startswith('Are there the same number of') or self.t.startswith('Are there the same number of')) and w == 'and'):
+      if w in ('of', 'many', 'more', 'fewer', 'than') \
+          or (w == 'as' and words[0] == 'Is' and (words[1] in feature_names or words[2] in feature_names))\
+          or (w == 'and' and self.t.startswith('Are there the same number of')) \
+          or (w == 'and' and self.t.startswith('Are there an equal number of')):
+
         for j, w2 in enumerate(words[i+1:]):
           if w2 in ('the', 'other'):
             continue
           name = get_token_name(w2)
           if name is None:
             break
-          if not name.startswith('S'):
-            continue
-          self.forms[name].props['case'] = 'gen'
+          if name.startswith('S') or name.startswith('O'):
+            self.forms[name].props['case'] = 'gen'
 
   def add_inst(self):
     words = self.t.split(' ')
@@ -154,10 +160,9 @@ class FormDetector:
           name = get_token_name(w2)
           if name is None or name.startswith('R'):
             break
-          if not name.startswith('S'):
-            continue
-          self.forms[name].props['case'] = 'inst'
-          self.forms[name].props['num'] = 'pl'
+          if name.startswith('S') or name.startswith('O'):
+            self.forms[name].props['case'] = 'inst'
+            self.forms[name].props['num'] = 'pl'
 
   # noinspection PyMethodMayBeStatic
   def propagate_forms(self):
@@ -182,12 +187,21 @@ class FormDetector:
       elif w not in ['the'] and not is_token(w):
         last_r = None
 
+  def propagate_forms_s_o(self):
+    words = self.t.split(' ')
+    for i, w in enumerate(words):
+      if is_token(w, 'S'):
+        s_name = get_token_name(w)
+        self.forms['O'] = Form({'case': s_name, 'num': s_name, 'gen': s_name})
+        return
+
   def add_all(self):
     self.add_plural()
     self.add_gen()
     self.add_inst()
     self.propagate_forms()
     self.propagate_forms_r_s()
+    self.propagate_forms_s_o()
     return self.t
 
 
@@ -220,10 +234,13 @@ def capitalise(t):
   return t
 
 class Translator:
-  def __init__(self, t):
-    self.t = t
+  def __init__(self):
     self.translations = self.build_translations()
     self.forms = {}
+
+    self.all_trfrom = [tn[0] for tn in self.translations]
+    self.all_trfrom = set(self.all_trfrom)
+    self.used_trfrom = set()
 
   @staticmethod
   def build_translations():
@@ -235,8 +252,9 @@ class Translator:
         (r'does it have the same <feature> as', r'czy ma ten sam <feature>, co'),
         (r'is it the same <feature> as', r'czy ma ten sam <feature>, co'),
         (r'is its <feature> the same as', r'czy ma ten sam <feature>, co'),
-        (r'is what <feature>', r'jest jakiego <feature>u'),
-        (r'has what <feature>', r'ma jaki <feature>'),
+        (r'(.*?) is what <feature>\?', r'Jakiego <feature>u jest \1?'),
+        (r'(.*?) has what <feature>\?', r'Jaki <feature> ma \1?'),
+        (r'is the same <feature>', r'jest tego samego <feature>u'),
         (r'has the same <feature>', r'ma ten sam <feature>'),
         (r'have same <feature>', r'mają ten sam <feature>'),
         (r'have the same <feature>', r'mają ten sam <feature>'),
@@ -247,7 +265,7 @@ class Translator:
         (r'what is the <feature> of the other', r'jaki jest <feature> innego'),
         (r'what is the <feature> of', r'jaki jest <feature>'),
         (r'what <feature> is it', r'jaki ma <feature>'),
-        (r'what <feature> is', r'jakiego <feature>u jest'),
+        (r'what <feature> is', r'jakiego jest <feature>u'),
         (r'what <feature> is the other', r'jaki <feature> ma inny'),
         (r'Is the <feature> of', r'Czy <feature>'),
 
@@ -299,7 +317,7 @@ class Translator:
         (r'There is a (.*?); how many (.*?) are (.*?) it\?',
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
         (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-        (r'How many (<.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
+        (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
         (r'; what is it made of\?', '. Z czego jest <D:case=nom,num=sg,gen=S>?'),
         (r'; what material is it made of\?', '. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
       ],
@@ -307,9 +325,9 @@ class Translator:
         (r'^How many other\b', r'Ile innych'),
         (r'^What number of other\b', r'Ile innych'),
         (r'How many other (.*?) have the same', r'Ile innych \1 ma ten sam'),
-        (r'How many other (.*?) are the same', r'Ile innych \1 ma ten sam'),
+        (r'How many other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
         (r'What number of other (.*?) have the same', r'Ile innych \1 ma ten sam'),
-        (r'What number of other (.*?) are the same', r'Ile innych \1 ma ten sam')
+        (r'What number of other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam')
       ],
       'single_and': [
         (r'\bboth\b', '')
@@ -321,7 +339,7 @@ class Translator:
         (r'\bwhat number of (.*?) things are', r'ile \1 rzeczy jest'),
         (r'\bhow many (.*?) objects are', r'ile \1 obiektów jest'),
         (r'\bwhat number of (.*?) objects are', r'ile \1 obiektów jest'),
-        (r'\bhow many (<.*?) are', r'ile \1 jest'),
+        (r'\bhow many (.*?) are', r'ile \1 jest'),
         (r'\bwhat number of (.*?) are', r'ile \1 jest')
       ],
       # 'three_hop': [
@@ -359,9 +377,9 @@ class Translator:
         (r'\bthat is the same color as the', '<W> jest tego samego koloru, co'),   # !
 
         (r'\bare there any other things', 'czy jest coś'),
-        (r'\bis there another', 'czy jest inny'),
-        (r'\bis there anything else', 'czy jest coś'),
-        (r'\bis there any other thing that', 'czy jest coś co'),
+        (r'\bis there another', 'czy jest <O>'),
+        (r'\bis there anything else that', 'czy jest coś, co'),
+        (r'\bis there any other thing that', 'czy jest coś, co'),
         (r'\bare there any other', 'czy są jakieś inne'),
         (r'\bof the other', 'innego'),
 
@@ -394,13 +412,13 @@ class Translator:
 
     translations_dict['other'].extend(build_feature_translations())
 
-    translations2 = [[
+    translations2 = [
       (r'\bnumber\b', 'liczba'),
       (r'\bthe\b', ' '),
       (r'\bof\b', ' '),
       (r'\band\b', 'i'),
-      (r'\banother\b', 'inny'),
-      (r'\bother\b', 'inny'),
+      (r'\banother\b', '<O>'),
+      (r'\bother\b', '<O>'),
       (r'\bthings\b', 'rzeczy'),
       (r'\bobjects\b', 'rzeczy'),
       (r'\bsize\b', 'rozmiar'),
@@ -408,49 +426,55 @@ class Translator:
       (r'\bshape\b', 'ksztalt'),
       (r'\bmaterial\b', 'materiał'),
       (r'\bas\b', 'co'),
-    ]]
+      (r'\bis\b', 'jest'),
+      (r'\bthat\b', '<W>'),
+    ]
 
-    translations = itertools.chain(translations_dict.values())
+    translations = itertools.chain.from_iterable(translations_dict.values())
 
-    translations = sorted(translations, key=lambda q: len(q[0]), reverse=True)
+    translations = sorted(translations, key=lambda t: len(t[0]), reverse=True)
     translations.extend(translations2)
 
     return translations
 
-  def initialise_forms(self):
-    tokens = re.findall(r'<(.*?)>', self.t)
+  def initialise_forms(self, t):
+    self.forms = {}
+
+    tokens = re.findall(r'<(.*?)>', t)
     for token in tokens:
       self.forms[token] = Form({'case': '' if token.startswith('R') else 'nom',
                            'num': 'sg',
                            'gen': ''})
 
-  def translate(self):
-    self.initialise_forms()
+  def translate(self, t):
+    self.initialise_forms(t)
 
-    self.t = FormDetector(self.t, self.forms).add_all()
-    self.t = WordInflector(self.t, self.forms).inflect_all()
+    t = FormDetector(t, self.forms).add_all()
+    t = WordInflector(t, self.forms).inflect_all()
 
-    for tns in self.translations:
-      for trfrom, trto in tns:
-        self.t = re.sub(trfrom, trto, self.t, flags=re.IGNORECASE)
-        self.t = capitalise(self.t)
+    for trfrom, trto in self.translations:
+      if re.search(trfrom, t, flags=re.IGNORECASE):
+        self.used_trfrom.add(trfrom)
+      t = re.sub(trfrom, trto, t, flags=re.IGNORECASE)
+      t = capitalise(t)
 
-    self.t = WordInflector(self.t, self.forms).inflect_which()
+    t = WordInflector(t, self.forms).inflect_which()
 
     new_params = set()
     for param_prefix in param_types.keys():
-      new_params.update(re.findall(r'<(%s\d*).*?>' % param_prefix, self.t))
+      new_params.update(re.findall(r'<(%s\d*).*?>' % param_prefix, t))
 
-    self.t = add_forms(self.t, self.forms)
+    t = add_forms(t, self.forms)
 
-    self.t = re.sub(r'^ ', '', self.t)
-    self.t = re.sub(' {2}', ' ', self.t)
-    self.t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', self.t)
-    self.t = re.sub(r'(?<!,) któr', ', któr', self.t)
-    self.t = re.sub(r'(?<!,) niż\b', ', niż', self.t)
-    self.t = re.sub(r'(?<!,) co\b', ', co', self.t)   # todo double comme
+    t = re.sub(r'^ ', '', t)
+    t = re.sub(' {2}', ' ', t)
+    t = re.sub(';', ' -', t)
+    t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
+    t = re.sub(r'(?<!,) kt.r', ', któr', t)
+    t = re.sub(r'(?<!,) niż\b', ', niż', t)
+    t = re.sub(r'(?<!,) co\b', ', co', t)   # todo double comme
 
-    return self.t, new_params
+    return t, new_params
 
 
 # noinspection PyShadowingNames
@@ -465,13 +489,15 @@ def main(args):
       for i, template in enumerate(json.load(f)):
         templates[fn].append(template)
 
+  translator = Translator()
+
   for fn, file_templates in templates.items():
     for ti, v in enumerate(file_templates):
       texts = []
       new_params_all = set()
       for i, t in enumerate(v['text']):
 
-        translated, new_params = Translator(t).translate()
+        translated, new_params = translator.translate(t)
         texts.append(translated)
         new_params_all.update(new_params)
 
@@ -482,6 +508,9 @@ def main(args):
 
     with open(os.path.join(args.template_dir + '_pl', fn), 'w') as fout:
       fout.write(json.dumps(file_templates))
+
+  print('Not used:')
+  print('\n'.join(translator.all_trfrom.difference(translator.used_trfrom)))
 
 
 if __name__ == '__main__':

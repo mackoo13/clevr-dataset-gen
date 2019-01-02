@@ -1,0 +1,1 @@
+python generate_questions.py --input_scene_file E:\Rzeczy\studia\wdsjn\CLEVR\CLEVR_v1.0\scenes\CLEVR_val_scenes.json
