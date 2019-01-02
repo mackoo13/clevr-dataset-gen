@@ -244,60 +244,16 @@ class Translator:
 
   @staticmethod
   def build_translations():
-    def build_feature_translations():
-      res = []
-
-      feature_translations = [
-        (r'are the same <feature> as', r'ma ten sam <feature> co'),
-        (r'does it have the same <feature> as', r'czy ma ten sam <feature>, co'),
-        (r'is it the same <feature> as', r'czy ma ten sam <feature>, co'),
-        (r'is its <feature> the same as', r'czy ma ten sam <feature>, co'),
-        (r'(.*?) is what <feature>\?', r'Jakiego <feature>u jest \1?'),
-        (r'(.*?) has what <feature>\?', r'Jaki <feature> ma \1?'),
-        (r'is the same <feature>', r'jest tego samego <feature>u'),
-        (r'has the same <feature>', r'ma ten sam <feature>'),
-        (r'have same <feature>', r'mają ten sam <feature>'),
-        (r'have the same <feature>', r'mają ten sam <feature>'),
-        (r'of the same <feature> as the', r'tego samego <feature>u, co'),
-        (r'that is the same <feature> as the', r'<W> jest tego samego <feature>u, co'),
-        (r'the same <feature> as the', r'tego samego <feature>u, co'),
-        (r'what is its <feature>', r'jaki jest <J:case=,num=sg,gen=S2> <feature>'),
-        (r'what is the <feature> of the other', r'jaki jest <feature> innego'),
-        (r'what is the <feature> of', r'jaki jest <feature>'),
-        (r'what <feature> is it', r'jaki ma <feature>'),
-        (r'what <feature> is', r'jakiego jest <feature>u'),
-        (r'what <feature> is the other', r'jaki <feature> ma inny'),
-        (r'Is the <feature> of', r'Czy <feature>'),
-
-        (r'Is there any other thing that has the same <feature> as the (.*?)\?',
-         r'Czy jest coś, co ma ten sam <feature>, co \1?'),
-        (r'Do the (.*?) and the (.*?) have the same <feature>\?',
-         r'Czy \1 i \2 mają ten sam <feature>?'),
-        (r'Is the <feature> of the (.*?) the same as the <Z2> <C2> <M2> <S2>\?',
-         r'Czy <feature> \1 jest taki sam, jak <Z2:case=gen,num=sg,gen=S2> <C2:case=gen,num=sg,gen=S2> <M2:case=gen,num=sg,gen=S2> <S2:case=gen,num=sg,gen=>?'),
-      ]
-
-      for f_en, f_pl in (('color', 'kolor'), ('size', 'rozmiar'), ('shape', 'kształt'), ('material', 'materiał')):
-        for (trfrom, trto) in feature_translations:
-          trfrom = trfrom.replace('<feature>', f_en)
-          trto = trto.replace('<feature>', f_pl)
-          res.append((trfrom, trto))
-
-      return res
-
     translations_dict = {
 
       'compare_integer': [
         (r'\bare there the same number of', r'czy jest taka sama liczba'),
         (r'\bare there an equal number of', r'czy jest tyle samo'),
         (r'\bis the number of', r'czy liczba'),
-        (r'\bthe same as the number of', r'jest taka sama jak'),
         (r'\bare there more', r'czy jest więcej'),
         (r'\bare there fewer', r'czy jest mniej'),
         (r'\bgreater', r'jest większa'),
         (r'\bless', r'jest mniejsza'),
-        (r'\bmore', r'więcej'),
-        (r'\bfewer', r'mniej'),
         (r'\bthan', r'niż'),
         (r'\bis the number of (.*?) the same as the number of (.*?)\?', r'czy liczba \1 jest taka sama jak liczba \2?')
       ],
@@ -305,11 +261,12 @@ class Translator:
         (r'Is the (.*?) the same size as the (.*?)\?',
          r'Czy \1 jest tak samo <F>, jak \2?'),
         (r'Are the (.*?) and the (.*?) made of the same material\?',
-         r'Czy \1 i \2 są [zrobione] z tego samego materiału?'),
+         r'Czy \1 i \2 są zrobione z tego samego materiału?'),
         (r'Is the (.*?) made of the same material as the (.*?)\?',
-         r'Czy \1 i jest z tego samego materiału, co \2?'),
+         r'Czy \1 jest z tego samego materiału, co \2?'),
         (r'made of the same material as the',
          r'z tego samego materiału, co'),
+        (r'same as', 'jest taki sam jak'),
       ],
       'one_hop': [
         (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
@@ -318,16 +275,22 @@ class Translator:
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
         (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
         (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-        (r'; what is it made of\?', '. Z czego jest <D:case=nom,num=sg,gen=S>?'),
         (r'; what material is it made of\?', '. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
+        (r'What is (.*?) made of\?', r'Z czego jest \1?'),
+        (r'<R> it\?', '<R> <I:case=S,num=S,gen=S>?')
       ],
       'same_relate': [
-        (r'^How many other\b', r'Ile innych'),
-        (r'^What number of other\b', r'Ile innych'),
         (r'How many other (.*?) have the same', r'Ile innych \1 ma ten sam'),
         (r'How many other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
         (r'What number of other (.*?) have the same', r'Ile innych \1 ma ten sam'),
-        (r'What number of other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam')
+        (r'What number of other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
+
+        (r'\bis there another', 'czy jest <O>'),
+        (r'\bare there any other things that', 'czy jest coś, co'),
+        (r'\bis there anything else that', 'czy jest coś, co'),
+        (r'\bis there any other thing that', 'czy jest coś, co'),
+
+        (r'\bthere is another', 'na obrazku jest drugi')
       ],
       'single_and': [
         (r'\bboth\b', '')
@@ -342,100 +305,76 @@ class Translator:
         (r'\bhow many (.*?) are', r'ile \1 jest'),
         (r'\bwhat number of (.*?) are', r'ile \1 jest')
       ],
-      # 'three_hop': [
-      # ],
+      # 'three_hop': [],
       'two_hop': [
         (r'\bthere is a\b', r'na obrazku jest'),
       ],
       'zero_hop': [
-        (r'are there any other', 'czy są jakieś inne'),
-        (r'are there any', 'czy są jakieś'),
-        (r'how many', 'ile'),
-        (r'what number of', 'ile'),
-        (r'is there a\b', 'czy [na obrazku] jest '),
+        (r'\bare there any other\b', 'czy są jakieś inne'),
+        (r'\bare there any\b', 'czy są jakieś'),
+        (r'\bis there a\b', 'czy [na obrazku] jest '),
+        (r'\bhow big is it', '<H:case=F,num=F,gen=F> jest <F>'),
+        (r'\bhow big is', 'jak <F> jest'),
+        (r'\bdoes the\b', 'czy'),
+        (r'\bthat is\b', '<W> jest'),
+        (r'\bthat are\b', '<W> są'),
+
         (r'How many (.*?) are there\?', r'Ile jest \1?'),
         (r'What number of (.*?) are there\?', r'Ile jest \1?'),
         (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
       ],
 
-      'other': [
-        (r'same as', 'jest taki sam jak'),
-        (r'does the', 'czy'),
-        (r'does it', 'czy'),
-        (r'do the', 'czy'),
-        (r'are there', 'jest'),
+      'feature': [
+        (r'are the same (.*?) as', r'ma ten sam \1 co'),
+        (r'does it have the same (.*?) as', r'czy ma ten sam \1, co'),
+        (r'is it the same (.*?) as', r'czy ma ten sam \1, co'),
+        (r'is its (.*?) the same as', r'czy ma ten sam \1, co'),
+        (r'(.*?) is what (.*?)\?', r'Jakiego \1u jest \2?'),
+        (r'(.*?) has what (.*?)\?', r'Jaki \1 ma \2?'),
+        (r'of the same (.*?) as the', r'tego samego \1u, co'),
+        (r'that is the same (.*?) as the', r'<W> jest tego samego \1u, co'),
+        (r'the same (.*?) as the', r'tego samego \1u, co'),
+        (r'what is its (.*?)', r'jaki jest <J:case=,num=sg,gen=S2> \1'),
+        (r'what is the (.*?) of the other', r'jaki jest \1 innego'),
+        (r'what is the (.*?) of', r'jaki jest \1'),
+        (r'what (.*?) is it', r'jaki ma \1'),
+        (r'what (.*?) is', r'jakiego jest \1u'),
+        (r'what (.*?) is the other', r'jaki \1 ma inny'),
+        (r'Is the (.*?) of', r'Czy \1'),
 
-        (r'What is (.*?) made of\?', r'Z czego jest \1?'),
+        (r'Is there any other thing that has the same (.*?) as the (.*?)\?',
+         r'Czy jest coś, co ma ten sam \1, co \2?'),
+        (r'Do the (.*?) and the (.*?) have the same (.*?)\?',
+         r'Czy \1 i \2 mają ten sam \3?'),
+        (r'Is the (.*?) of the (.*?) the same as the <Z2> <C2> <M2> <S2>\?',
+         r'Czy \1 \2 jest taki sam, jak <Z2:case=gen,num=sg,gen=S2> <C2:case=gen,num=sg,gen=S2> <M2:case=gen,num=sg,gen=S2> <S2:case=gen,num=sg,gen=>?'),
+      ],
+      'single_words': [
+        (r'\bnumber\b', 'liczba'),
+        (r'\bthe\b', ' '),
+        (r'\bof\b', ' '),
+        (r'\band\b', 'i'),
+        (r'\bother\b', '<O>'),
+        (r'\bthings\b', 'rzeczy'),
+        (r'\bobjects\b', 'rzeczy'),
+        (r'\bsize\b', 'rozmiar'),
+        (r'\bsizeu\b', 'rozmiaru'),
+        (r'\bcolor\b', 'kolor'),
+        (r'\bcoloru\b', 'koloru'),
+        (r'\bshape\b', 'kształt'),
+        (r'\bshapeu\b', 'kształtu'),
+        (r'\bmaterial\b', 'materiał'),
+        (r'\bmaterialu\b', 'materiału'),
+        (r'\bas\b', 'co'),
+        (r'\bis\b', 'jest'),
+        (r'\bthat\b', '<W>'),
 
-        (r'\bare [made of] same material as\b',
-         'jest z tego samego materiału, co'),     # todo
-        (r'\bthat is [made of] same material as\b',
-         '<W> jest z tego samego materiału, co'),   # todo
-        (r'\bthat is [made of] the same material as\b', '<W> jest [zrobiony] z tego samego materiału, co'),   # !
-
-        (r'\bthat is same color as the', '<W> jest tego samego koloru, co'),   # !
-        (r'\bthat is the same color as the', '<W> jest tego samego koloru, co'),   # !
-
-        (r'\bare there any other things', 'czy jest coś'),
-        (r'\bis there another', 'czy jest <O>'),
-        (r'\bis there anything else that', 'czy jest coś, co'),
-        (r'\bis there any other thing that', 'czy jest coś, co'),
-        (r'\bare there any other', 'czy są jakieś inne'),
-        (r'\bof the other', 'innego'),
-
-        (r'\bthere is another', 'na obrazku jest drugi'),
-
-        (r'^How many objects', 'ile przedmiotów'),
-        (r'^What number of objects', 'ile przedmiotów'),
-        (r'^How many things', 'ile rzeczy'),
-        (r'^What number of things', 'ile rzeczy'),
-
-        (r'^How many other objects', 'ile innych przedmiotów'),
-        (r'^What number of other objects', 'ile innych przedmiotów'),
-        (r'^How many other things', 'ile innych rzeczy'),
-        (r'^What number of other things', 'ile innych rzeczy'),
-
-        (r'\bthat is', '<W> jest'),
-        (r'\bthat are', '<W> są'),
-
-        (r'\bhow big is it', '<H:case=F,num=F,gen=F> jest <F>'),
-        (r'\bhow big is', 'jak <F> jest'),
-
-        # first words
-        (r'^Is', 'Czy'),
-        (r'^Are', 'Czy'),
-
-        # last words
         (r'it\?', '?')
       ]
     }
 
-    translations_dict['other'].extend(build_feature_translations())
-
-    translations2 = [
-      (r'\bnumber\b', 'liczba'),
-      (r'\bthe\b', ' '),
-      (r'\bof\b', ' '),
-      (r'\band\b', 'i'),
-      (r'\banother\b', '<O>'),
-      (r'\bother\b', '<O>'),
-      (r'\bthings\b', 'rzeczy'),
-      (r'\bobjects\b', 'rzeczy'),
-      (r'\bsize\b', 'rozmiar'),
-      (r'\bcolor\b', 'kolor'),
-      (r'\bshape\b', 'ksztalt'),
-      (r'\bmaterial\b', 'materiał'),
-      (r'\bas\b', 'co'),
-      (r'\bis\b', 'jest'),
-      (r'\bthat\b', '<W>'),
-    ]
-
     translations = itertools.chain.from_iterable(translations_dict.values())
-
-    translations = sorted(translations, key=lambda t: len(t[0]), reverse=True)
-    translations.extend(translations2)
-
-    return translations
+    return sorted(translations, key=lambda t: len(t[0]), reverse=True)
 
   def initialise_forms(self, t):
     self.forms = {}
@@ -445,6 +384,10 @@ class Translator:
       self.forms[token] = Form({'case': '' if token.startswith('R') else 'nom',
                            'num': 'sg',
                            'gen': ''})
+
+  def print_unused_translations_warning(self):
+    print('Warning! The following translations were not used:')
+    print('\n'.join(self.all_trfrom.difference(self.used_trfrom)))
 
   def translate(self, t):
     self.initialise_forms(t)
@@ -509,8 +452,7 @@ def main(args):
     with open(os.path.join(args.template_dir + '_pl', fn), 'w') as fout:
       fout.write(json.dumps(file_templates))
 
-  print('Not used:')
-  print('\n'.join(translator.all_trfrom.difference(translator.used_trfrom)))
+  translator.print_unused_translations_warning()
 
 
 if __name__ == '__main__':
