@@ -244,6 +244,10 @@ class Translator:
 
   @staticmethod
   def build_translations():
+    """
+    TODO
+    Ile inna rzeczy jest made same materiał, co zielona rzecz?
+    """
     translations_dict = {
 
       'compare_integer': [
@@ -267,6 +271,8 @@ class Translator:
         (r'made of the same material as the',
          r'z tego samego materiału, co'),
         (r'same as', 'jest taki sam jak'),
+        (r'Does (.*>) have the same (.*?) as',
+         r'Czy \1 ma taki sam \2, co'),
       ],
       'one_hop': [
         (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
@@ -284,6 +290,17 @@ class Translator:
         (r'How many other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
         (r'What number of other (.*?) have the same', r'Ile innych \1 ma ten sam'),
         (r'What number of other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
+
+        (r'Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
+         r'Czy jest coś, co ma ten sam \1, co \2?'),
+        (r'Is there any other thing of the same color as the (.*?)\?',
+         r'Czy jest coś tego samego koloru co \1?'),
+        (r'Is there another (.*?) that has the same (.*?) as the (.*?)\?',
+         r'Czy jest <O> \1, <W> ma ten sam \2, co \3?'),
+        (r'Are there any other things that have the same (.*?) as the (.*?)\?',
+         r'Czy są inne rzeczy, które mają ten sam \1, co \2?'),
+        (r'Are there any other (.*?) that have the same (.*?) as the (.*?)\?',
+         r'Czy są jakieś \1, <W> mają ten sam \2, co \3?'),
 
         (r'\bis there another', 'czy jest <O>'),
         (r'\bare there any other things that', 'czy jest coś, co'),
@@ -315,7 +332,6 @@ class Translator:
         (r'\bis there a\b', 'czy [na obrazku] jest '),
         (r'\bhow big is it', '<H:case=F,num=F,gen=F> jest <F>'),
         (r'\bhow big is', 'jak <F> jest'),
-        (r'\bdoes the\b', 'czy'),
         (r'\bthat is\b', '<W> jest'),
         (r'\bthat are\b', '<W> są'),
 
@@ -342,8 +358,6 @@ class Translator:
         (r'what (.*?) is the other', r'jaki \1 ma inny'),
         (r'Is the (.*?) of', r'Czy \1'),
 
-        (r'Is there any other thing that has the same (.*?) as the (.*?)\?',
-         r'Czy jest coś, co ma ten sam \1, co \2?'),
         (r'Do the (.*?) and the (.*?) have the same (.*?)\?',
          r'Czy \1 i \2 mają ten sam \3?'),
         (r'Is the (.*?) of the (.*?) the same as the <Z2> <C2> <M2> <S2>\?',
@@ -367,7 +381,6 @@ class Translator:
         (r'\bmaterialu\b', 'materiału'),
         (r'\bas\b', 'co'),
         (r'\bis\b', 'jest'),
-        (r'\bthat\b', '<W>'),
 
         (r'it\?', '?')
       ]
@@ -386,8 +399,10 @@ class Translator:
                            'gen': ''})
 
   def print_unused_translations_warning(self):
-    print('Warning! The following translations were not used:')
-    print('\n'.join(self.all_trfrom.difference(self.used_trfrom)))
+    unused_translations = self.all_trfrom.difference(self.used_trfrom)
+    if len(unused_translations) > 0:
+      print('Warning! The following translations were not used:')
+      print('\n'.join(unused_translations))
 
   def translate(self, t):
     self.initialise_forms(t)
