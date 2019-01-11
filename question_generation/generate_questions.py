@@ -63,7 +63,7 @@ parser.add_argument('--output_questions_file',
     help="The output file to write containing generated questions")
 
 # Control which and how many images to process
-parser.add_argument('--scene_start_idx', default=0, type=int,
+parser.add_argument('--scene_start_idx', default=2, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
 parser.add_argument('--num_scenes', default=1, type=int,

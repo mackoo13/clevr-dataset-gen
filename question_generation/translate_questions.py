@@ -286,16 +286,16 @@ class Translator:
         (r'<R> it\?', '<R> <I:case=S,num=S,gen=S>?')
       ],
       'same_relate': [
-        (r'How many other (.*?) have the same', r'Ile innych \1 ma ten sam'),
-        (r'How many other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
-        (r'What number of other (.*?) have the same', r'Ile innych \1 ma ten sam'),
-        (r'What number of other (.*?) are(?: there of)? the same', r'Ile innych \1 ma ten sam'),
+        (r'How many other (.*?) have the same', r'Ile \1 ma ten sam'),
+        (r'How many other (.*?) are(?: there of)? the same', r'Ile \1 ma ten sam'),
+        (r'What number of other (.*?) have the same', r'Ile \1 ma ten sam'),
+        (r'What number of other (.*?) are(?: there of)? the same', r'Ile \1 ma ten sam'),
 
         (r'Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
          r'Czy jest coś, co ma ten sam \1, co \2?'),
-        (r'Is there any other thing of the same color as the (.*?)\?',
-         r'Czy jest coś tego samego koloru co \1?'),
-        (r'Is there another (.*?) that has the same (.*?) as the (.*?)\?',
+        (r'Is there (?:any other thing|anything else) of the same color as the (.*?)\?',
+         r'Czy jest coś tego samego koloru, co \1?'),
+        (r'Is there another (.*?) that (?:has|is) the same (.*?) as the (.*?)\?',
          r'Czy jest <O> \1, <W> ma ten sam \2, co \3?'),
         (r'Are there any other things that have the same (.*?) as the (.*?)\?',
          r'Czy są inne rzeczy, które mają ten sam \1, co \2?'),
@@ -345,7 +345,7 @@ class Translator:
         (r'does it have the same (.*?) as', r'czy ma ten sam \1, co'),
         (r'is it the same (.*?) as', r'czy ma ten sam \1, co'),
         (r'is its (.*?) the same as', r'czy ma ten sam \1, co'),
-        (r'(.*?) is what (.*?)\?', r'Jakiego \1u jest \2?'),
+        (r'(.*?) is what (.*?)\?', r'Jakiego \2u jest \1?'),
         (r'(.*?) has what (.*?)\?', r'Jaki \1 ma \2?'),
         (r'of the same (.*?) as the', r'tego samego \1u, co'),
         (r'that is the same (.*?) as the', r'<W> jest tego samego \1u, co'),
@@ -425,12 +425,13 @@ class Translator:
     t = add_forms(t, self.forms)
 
     t = re.sub(r'^ ', '', t)
+    t = re.sub(' \?', '?', t)
     t = re.sub(' {2}', ' ', t)
     t = re.sub(';', ' -', t)
     t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
-    t = re.sub(r'(?<!,) kt.r', ', któr', t)
+    t = re.sub(r'(?<!,) któr', ', któr', t, re.UNICODE)
     t = re.sub(r'(?<!,) niż\b', ', niż', t)
-    t = re.sub(r'(?<!,) co\b', ', co', t)   # todo double comme
+    t = re.sub(r'(?<!,) co\b', ', co', t)
 
     return t, new_params
 
