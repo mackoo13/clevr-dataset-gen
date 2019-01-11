@@ -19,6 +19,27 @@
     ],
     "Material": [
       "rubber", "metal"
+    ],
+    "Big": [
+      "big"
+    ],
+    "What_like": [
+      "what_like"
+    ],
+    "Which": [
+      "that"
+    ],
+    "Made": [
+      "made"
+    ],
+    "It": [
+      "it"
+    ],
+    "Its": [
+      "its"
+    ],
+    "Other": [
+      "other"
     ]
   },
   "functions": [
