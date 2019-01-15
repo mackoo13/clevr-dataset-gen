@@ -1,118 +1,111 @@
-# CLEVR Dataset Generation
+# CLEVR Dataset Generation for Polish Language 
 
-This is the code used to generate the [CLEVR dataset](http://cs.stanford.edu/people/jcjohns/clevr/) as described in the paper:
+This code is an extension of an existing project: [CLEVR](https://github.com/facebookresearch/clevr-dataset-gen). See the project website and original Readme for details. It generates questions about images with some objects arranged in different layouts.
 
-**[CLEVR: A Diagnostic Dataset for Compositional Language and Elementary Visual Reasoning](http://cs.stanford.edu/people/jcjohns/clevr/)**
- <br>
- <a href='http://cs.stanford.edu/people/jcjohns/'>Justin Johnson</a>,
- <a href='http://home.bharathh.info/'>Bharath Hariharan</a>,
- <a href='https://lvdmaaten.github.io/'>Laurens van der Maaten</a>,
- <a href='http://vision.stanford.edu/feifeili/'>Fei-Fei Li</a>,
- <a href='http://larryzitnick.org/'>Larry Zitnick</a>,
- <a href='http://www.rossgirshick.info/'>Ross Girshick</a>
- <br>
- Presented at [CVPR 2017](http://cvpr2017.thecvf.com/)
-
-Code and pretrained models for the baselines used in the paper [can be found here](https://github.com/facebookresearch/clevr-iep).
-
-You can use this code to render synthetic images and compositional questions for those images, like this:
-
-<div align="center">
-  <img src="images/example1080.png" width="800px">
-</div>
-
-**Q:** How many small spheres are there? <br>
-**A:** 2
-
-**Q:**  What number of cubes are small things or red metal objects? <br>
-**A:**  2
-
-**Q:** Does the metal sphere have the same color as the metal cylinder? <br>
-**A:** Yes
-
-**Q:** Are there more small cylinders than metal things? <br>
-**A:** No
-
-**Q:**  There is a cylinder that is on the right side of the large yellow object behind the blue ball; is there a shiny cube in front of it? <br>
-**A:**  Yes
-
-If you find this code useful in your research then please cite
+#### Examples of output:
 
 ```
-@inproceedings{johnson2017clevr,
-  title={CLEVR: A Diagnostic Dataset for Compositional Language and Elementary Visual Reasoning},
-  author={Johnson, Justin and Hariharan, Bharath and van der Maaten, Laurens
-          and Fei-Fei, Li and Zitnick, C Lawrence and Girshick, Ross},
-  booktitle={CVPR},
-  year={2017}
-}
+Czy żółta kula i szary walec mają ten sam rozmiar?
+
+Czy liczba gumowych walców jest mniejsza, niż liczba czerwonych matowych walców?
+
+Ile małych brązowych błyszczących rzeczy jest za małym walcem?
+
+Jaki jest kolor gumowej rzeczy, która jest na prawo od dużego żółtego błyszczącego przedmiotu?
 ```
 
-All code was developed and tested on OSX and Ubuntu 16.04.
-
-## Step 1: Generating Images
-First we render synthetic images using [Blender](https://www.blender.org/), outputting both rendered images as well as a JSON file containing ground-truth scene information for each image.
-
-Blender ships with its own installation of Python which is used to execute scripts that interact with Blender; you'll need to add the `image_generation` directory to Python path of Blender's bundled Python. The easiest way to do this is by adding a `.pth` file to the `site-packages` directory of Blender's Python, like this:
+## Step 1: Translating the question templates
+First we translate the text of the English templates to Polish, based on a set of regular expressions:
 
 ```bash
-echo $PWD/image_generation >> $BLENDER/$VERSION/python/lib/python3.5/site-packages/clevr.pth
+cd question_generation
+python translate.py
 ```
 
-where `$BLENDER` is the directory where Blender is installed and `$VERSION` is your Blender version; for example on OSX you might run:
+All tokens (e.g. `<Z>`) are extended by an information about the grammatical properties it should have in the sentence (in Polish language these are noun case, number and gender). The correct forms are automatically selected by the translating script. 
 
-```bash
-echo $PWD/image_generation >> /Applications/blender/blender.app/Contents/Resources/2.78/python/lib/python3.5/site-packages/clevr.pth
+#### Grammatical properties
+
+Polish grammar is relatively complex and the word ending usually depends on its case, number and gender. This information is embedded in the token as in the following example:
+
+````
+... <Z:case=S,num=S,gen=S> ... <S:case=gen,num=pl,gen=> ...
+````
+
+Token `<Z>` is required to inherit `case`, `num` and `gen` properties from token `<S>` - which in turn is supposed to have genitive (`case=gen`) plural (`num=pl`) form. The gender will be determined after a specific word is inserted there, hence empty reference: `gen=`.
+
+
+#### Example
+
+```
+"How many <Z> <C> <M> <S>s are there?"
 ```
 
-You can then render some images like this:
+Becomes the following:
 
-```bash
-cd image_generation
-blender --background --python render_images.py -- --num_images 10
+```
+"Ile jest <Z:case=S,num=S,gen=S> <C:case=S,num=S,gen=S> <M:case=S,num=S,gen=S> <S:case=gen,num=pl,gen=>?"
 ```
 
-On OSX the `blender` binary is located inside the blender.app directory; for convenience you may want to
-add the following alias to your `~/.bash_profile` file:
 
-```bash
-alias blender='/Applications/blender/blender.app/Contents/MacOS/blender'
-```
 
-If you have an NVIDIA GPU with CUDA installed then you can use the GPU to accelerate rendering like this:
-
-```bash
-blender --background --python render_images.py -- --num_images 10 --use_gpu 1
-```
-
-After this command terminates you should have ten freshly rendered images stored in `output/images` like these:
-
-<div align="center">
-  <img src="images/img1.png" width="260px">
-  <img src="images/img2.png" width="260px">
-  <img src="images/img3.png" width="260px">
-  <br>
-  <img src="images/img4.png" width="260px">
-  <img src="images/img5.png" width="260px">
-  <img src="images/img6.png" width="260px">
-</div>
-
-The file `output/CLEVR_scenes.json` will contain ground-truth scene information for all newly rendered images.
-
-You can find [more details about image rendering here](image_generation/README.md).
 
 ## Step 2: Generating Questions
-Next we generate questions, functional programs, and answers for the rendered images generated in the previous step.
-This step takes as input the single JSON file containing all ground-truth scene information, and outputs a JSON file 
-containing questions, answers, and functional programs for the questions in a single JSON file.
-
-You can generate questions like this:
+From the perspective of the user, the next step is the same as in original CLEVR project.
 
 ```bash
 cd question_generation
 python generate_questions.py
 ```
 
+At this stage the templates with grammatical properties are transformed into questions with all tokens replaced by words in correct grammatical forms. 
+
+The procedure is considerably more complex than in English, one reason being the need to inflect nouns and adjectives.
+
+
+#### Word inflection
+
+The word endings are defined in `grammar_pl.json`:
+
+```
+...
+"niebieski": {
+    "case=nom,num=pl,gen=m": "e",       # -> niebieskie
+    "case=nom,num=pl,gen=f": "e",       # -> niebieskie
+    "case=gen,num=sg,gen=m": "ego",     # -> niebieskiego
+    "case=gen,num=sg,gen=f": "ej"       # -> niebieskiej
+    },
+...
+```
+
+#### Word-specific properties
+
+File `grammar_pl.json` also defines what noun case should be used after prepositions - e.g. instrumental is used with 'za' (behind), but genitive with 'na lewo od' (to the left)', and the gender of used nouns - e.g. 'sześcian' (cube) is masculine, but 'kula' (ball) is feminine. These propertoies affect all other words that inherit their forms from the parent (e.g. adjectives have the same form as the noun).
+
+```
+"dependent_forms": {
+    "kula": "case=,num=,gen=f",
+    "sześcian": "case=,num=,gen=m",
+    ...
+    "za": "case=inst,num=sg,gen=",
+    "na lewo od": "case=gen,num=sg,gen="
+}
+```
+
+#### Token substitution order
+
+If the template contains words whoseform depend on other words, the tokens have to be replaced in a valid order. For example, the following tokens:
+
+```
+<R:case=,num=sg,gen=>
+<Z:case=S,num=S,gen=S>
+<S:case=R,num=sg,gen=>
+``` 
+
+Have to be resolved in strict order `R, S, Z`, even if the order in the template is different. 
+
+## Step 3: The output
+
 The file `output/CLEVR_questions.json` will then contain questions for the generated images.
 
-You can [find more details about question generation here](question_generation/README.md).
+You can [find more details about question generation in CLEVR project here](question_generation/README.md).
