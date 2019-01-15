@@ -244,10 +244,6 @@ class Translator:
 
   @staticmethod
   def build_translations():
-    """
-    TODO
-    Ile inna rzeczy jest made same materiał, co zielona rzecz?
-    """
     translations_dict = {
 
       'compare_integer': [
@@ -259,7 +255,8 @@ class Translator:
         (r'\bgreater', r'jest większa'),
         (r'\bless', r'jest mniejsza'),
         (r'\bthan', r'niż'),
-        (r'\bis the number of (.*?) the same as the number of (.*?)\?', r'czy liczba \1 jest taka sama jak liczba \2?')
+        (r'\bis the number of (.*?) the same as the number of (.*?)\?',
+         r'czy liczba \1 jest taka sama jak liczba \2?')
       ],
       'comparison': [
         (r'Is the (.*?) the same size as the (.*?)\?',
@@ -279,17 +276,24 @@ class Translator:
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
         (r'There is a (.*?); how many (.*?) are (.*?) it\?',
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-        (r'What number of (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-        (r'How many (.*?) are (.*?) the (.*?)\?', r'Ile \1 jest \2 \3?'),
-        (r'; what material is it made of\?', '. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
-        (r'What is (.*?) made of\?', r'Z czego jest \1?'),
-        (r'<R> it\?', '<R> <I:case=S,num=S,gen=S>?')
+        (r'What number of (.*?) are (.*?) the (.*?)\?',
+         r'Ile \1 jest \2 \3?'),
+        (r'; what material is it made of\?',
+         r'. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
+        (r'What is (.*?) made of\?',
+         r'z czego jest \1?'),
+        (r'<R> it\?',
+         r'<R> <I:case=R,num=S,gen=S>?'),
+        (r'<R2> it\?',
+         r'<R2> <I:case=R2,num=S,gen=S>?')
       ],
       'same_relate': [
-        (r'How many other (.*?) have the same', r'Ile \1 ma ten sam'),
-        (r'How many other (.*?) are(?: there of)? the same', r'Ile \1 ma ten sam'),
-        (r'What number of other (.*?) have the same', r'Ile \1 ma ten sam'),
-        (r'What number of other (.*?) are(?: there of)? the same', r'Ile \1 ma ten sam'),
+        (r'(?:How many|What number of) other (.*?) have the same',
+         r'Ile \1 ma ten sam'),
+        (r'(?:How many|What number of) other (.*?) are(?: there of)? the same',
+         r'Ile \1 ma ten sam'),
+        (r'How many other (.*?) are made of the same material as the (.*?)\?',
+         r'Ile \1 jest zrobione z tego samego materiału, co \2?'),
 
         (r'Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
          r'Czy jest coś, co ma ten sam \1, co \2?'),
@@ -315,19 +319,18 @@ class Translator:
       'single_or': [
         (r'\beither\b', 'albo'),
         (r'\bor\b', 'albo'),
-        (r'\bhow many (.*?) things are', r'ile \1 rzeczy jest'),
-        (r'\bwhat number of (.*?) things are', r'ile \1 rzeczy jest'),
-        (r'\bhow many (.*?) objects are', r'ile \1 obiektów jest'),
-        (r'\bwhat number of (.*?) objects are', r'ile \1 obiektów jest'),
-        (r'\bhow many (.*?) are', r'ile \1 jest'),
-        (r'\bwhat number of (.*?) are', r'ile \1 jest')
+
+        (r'(?:How many|What number of) (.*?) things are',
+         r'ile \1 rzeczy jest'),
+        (r'(?:How many|What number of) (.*?) objects are', r'ile \1 obiektów jest'),
+        (r'(?:How many|What number of) (.*?) are', r'ile \1 jest'),
       ],
       # 'three_hop': [],
       'two_hop': [
         (r'\bthere is a\b', r'na obrazku jest'),
       ],
       'zero_hop': [
-        (r'\bare there any other\b', 'czy są jakieś inne'),
+        (r'\bare there any other\b', 'czy są jakieś'),
         (r'\bare there any\b', 'czy są jakieś'),
         (r'\bis there a\b', 'czy [na obrazku] jest '),
         (r'\bhow big is it', '<H:case=F,num=F,gen=F> jest <F>'),
@@ -335,9 +338,10 @@ class Translator:
         (r'\bthat is\b', '<W> jest'),
         (r'\bthat are\b', '<W> są'),
 
-        (r'How many (.*?) are there\?', r'Ile jest \1?'),
-        (r'What number of (.*?) are there\?', r'Ile jest \1?'),
-        (r'Are any (.*?) visible\?', r'Czy widać jakieś \1?'),
+        (r'(?:How many|What number of) (.*?) are there\?',
+         r'Ile jest \1?'),
+        (r'Are any (.*?) visible\?',
+         r'Czy widać jakieś \1?'),
       ],
 
       'feature': [
@@ -354,7 +358,7 @@ class Translator:
         (r'what is the (.*?) of the other', r'jaki jest \1 innego'),
         (r'what is the (.*?) of', r'jaki jest \1'),
         (r'what (.*?) is it', r'jaki ma \1'),
-        (r'what (.*?) is', r'jakiego jest \1u'),
+        (r'what (.*?) is', r'jakiego \1u jest'),
         (r'what (.*?) is the other', r'jaki \1 ma inny'),
         (r'Is the (.*?) of', r'Czy \1'),
 
@@ -429,9 +433,7 @@ class Translator:
     t = re.sub(' {2}', ' ', t)
     t = re.sub(';', ' -', t)
     t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
-    t = re.sub(r'(?<!,) któr', ', któr', t, re.UNICODE)
-    t = re.sub(r'(?<!,) niż\b', ', niż', t)
-    t = re.sub(r'(?<!,) co\b', ', co', t)
+    t = re.sub(r'(?<!,) (<W|niż|co)', r', \1', t)
 
     return t, new_params
 
