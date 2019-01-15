@@ -1,0 +1,106 @@
+{
+  "rzecz": {
+	"case=nom,num=pl,gen=": "y",
+	"case=gen,num=sg,gen=": "y",
+	"case=gen,num=pl,gen=": "y",
+	"case=inst,num=sg,gen=": "ą",
+	"case=inst,num=pl,gen=": "ami"
+  },
+  "przedmiot": {
+	"case=nom,num=pl,gen=": "y",
+	"case=gen,num=sg,gen=": "u",
+	"case=gen,num=pl,gen=": "ów",
+	"case=inst,num=sg,gen=": "em",
+	"case=inst,num=pl,gen=": "ami"
+  },
+  "kostka": {
+	"case=nom,num=pl,gen=": "-i",
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "--ek",
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
+  },
+  "kula": {
+	"case=nom,num=pl,gen=": "-e",
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "-",
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
+  },
+  "kulka": {
+	"case=nom,num=pl,gen=": "-i",
+	"case=gen,num=sg,gen=": "-i",
+	"case=gen,num=pl,gen=": "--ek",
+	"case=inst,num=sg,gen=": "-ą",
+	"case=inst,num=pl,gen=": "mi"
+  },
+  "sześcian": {
+	"case=nom,num=pl,gen=": "y",
+	"case=gen,num=sg,gen=": "u",
+	"case=gen,num=pl,gen=": "ów",
+	"case=inst,num=sg,gen=": "em",
+	"case=inst,num=pl,gen=": "ami"
+  },
+  "walec": {
+	"case=nom,num=pl,gen=": "--ce",
+	"case=gen,num=sg,gen=": "--ca",
+	"case=gen,num=pl,gen=": "--ców",
+	"case=inst,num=sg,gen=": "--cem",
+	"case=inst,num=pl,gen=": "--cami"
+  },
+  "duży": {
+	"case=nom,num=sg,gen=f": "-a"
+  },
+  "jaki": {
+	"case=nom,num=sg,gen=f": "-a"
+  },
+  "który": {
+	"case=nom,num=sg,gen=m": "",
+	"case=nom,num=pl,gen=m": "-e"
+  },
+  "to": {
+	"case=gen,num=sg,gen=m": "--niego",
+	"case=gen,num=sg,gen=f": "--niej",
+	"case=inst,num=sg,gen=m": "--nim",
+	"case=inst,num=sg,gen=f": "--nią"
+  },
+  "jego": {
+	"case=,num=sg,gen=m": "",
+	"case=,num=sg,gen=f": "--j"
+  },
+  "niebieski": {
+	"case=nom,num=pl,gen=m": "e",
+	"case=nom,num=pl,gen=f": "e",
+	"case=gen,num=sg,gen=m": "ego",
+	"case=gen,num=sg,gen=f": "ej"
+  },
+  "regular_endings": {
+	"case=nom,num=sg,gen=m": "",
+	"case=nom,num=sg,gen=f": "-a",
+	"case=nom,num=sg,gen=": "",
+	"case=nom,num=pl,gen=m": "-e",
+	"case=nom,num=pl,gen=f": "-e",
+	"case=gen,num=sg,gen=m": "-ego",
+	"case=gen,num=sg,gen=f": "-ej",
+	"case=gen,num=pl,gen=f": "ch",
+	"case=gen,num=pl,gen=m": "ch",
+	"case=gen,num=pl,gen=": "ch",
+	"case=inst,num=sg,gen=m": "m",
+	"case=inst,num=sg,gen=f": "-ą",
+	"case=inst,num=pl,gen=m": "mi",
+	"case=inst,num=pl,gen=f": "mi"
+  },
+  "dependent_forms": {
+	"kostka": "case=,num=,gen=f",
+	"kula": "case=,num=,gen=f",
+	"kulka": "case=,num=,gen=f",
+	"przedmiot": "case=,num=,gen=m",
+	"rzecz": "case=,num=,gen=f",
+	"sześcian": "case=,num=,gen=m",
+	"walec": "case=,num=,gen=m",
+    "przed": "case=inst,num=sg,gen=",
+    "za": "case=inst,num=sg,gen=",
+    "na prawo od": "case=gen,num=sg,gen=",
+    "na lewo od": "case=gen,num=sg,gen="
+  }
+}
