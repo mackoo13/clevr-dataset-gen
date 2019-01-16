@@ -418,7 +418,6 @@ class Translator:
     self.initialise_forms(t)
     t = re.sub('\[', '', t)
     t = re.sub(']', '', t)
-    print(t)
 
     t = FormDetector(t, self.forms).add_all()
     t = WordInflector(t, self.forms).inflect_all()
