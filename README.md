@@ -6,11 +6,8 @@ This code is an extension of an existing project: [CLEVR](https://github.com/fac
 
 ```
 Czy żółta kula i szary walec mają ten sam rozmiar?
-
 Czy liczba gumowych walców jest mniejsza, niż liczba czerwonych matowych walców?
-
 Ile małych brązowych błyszczących rzeczy jest za małym walcem?
-
 Jaki jest kolor gumowej rzeczy, która jest na prawo od dużego żółtego błyszczącego przedmiotu?
 ```
 

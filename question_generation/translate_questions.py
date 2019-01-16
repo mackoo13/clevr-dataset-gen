@@ -294,6 +294,8 @@ class Translator:
          r'Ile \1 ma ten sam'),
         (r'How many other (.*?) are made of the same material as the (.*?)\?',
          r'Ile \1 jest zrobione z tego samego materiału, co \2?'),
+        (r'What number of other (.*?) are made of the same material as the (.*?)\?',
+         r'Ile \1 jest zrobione z tego samego materiału, co \2?'),
 
         (r'Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
          r'Czy jest coś, co ma ten sam \1, co \2?'),
@@ -314,7 +316,9 @@ class Translator:
         (r'\bthere is another', 'na obrazku jest drugi')
       ],
       'single_and': [
-        (r'\bboth\b', '')
+        (r'\bboth\b', ''),
+        (r'The (.*?) that is both <R2> the (.*?) and <R> the (.*?) is made of what material\?',
+         r'Z jakiego materiału jest \1, <W> jest <R2> \2 i <R> \3?')
       ],
       'single_or': [
         (r'\beither\b', 'albo'),
@@ -328,6 +332,8 @@ class Translator:
       # 'three_hop': [],
       'two_hop': [
         (r'\bthere is a\b', r'na obrazku jest'),
+        (r'The (.*?) that is <R2> the (.*?) that is <R> the (.*?) is made of what material?',
+         r'Z jakiego materiału jest \1, <W2> jest <R2> \2, <W> jest <R> \3?')
       ],
       'zero_hop': [
         (r'\bare there any other\b', 'czy są jakieś'),
@@ -410,6 +416,9 @@ class Translator:
 
   def translate(self, t):
     self.initialise_forms(t)
+    t = re.sub('\[', '', t)
+    t = re.sub(']', '', t)
+    print(t)
 
     t = FormDetector(t, self.forms).add_all()
     t = WordInflector(t, self.forms).inflect_all()

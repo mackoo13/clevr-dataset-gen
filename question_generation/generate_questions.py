@@ -63,10 +63,10 @@ parser.add_argument('--output_questions_file',
     help="The output file to write containing generated questions")
 
 # Control which and how many images to process
-parser.add_argument('--scene_start_idx', default=2, type=int,
+parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=1, type=int,
+parser.add_argument('--num_scenes', default=10, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
@@ -786,7 +786,7 @@ def main(args):
         'questions': questions,
       }, f)
 
-  with open('../output/raw.txt', 'w', encoding='utf8') as f:
+  with open('../output/raw4.txt', 'w', encoding='utf8') as f:
     for q, tid in zip(questions, templates.keys()):
       f.write(q['question'])
       f.write('\n')
