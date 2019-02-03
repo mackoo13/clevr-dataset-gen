@@ -77,7 +77,7 @@ The word endings are defined in `grammar_pl.json`:
 
 #### Word-specific properties
 
-File `grammar_pl.json` also defines what noun case should be used after prepositions - e.g. instrumental is used with 'za' (behind), but genitive with 'na lewo od' (to the left)', and the gender of used nouns - e.g. 'sześcian' (cube) is masculine, but 'kula' (ball) is feminine. These propertoies affect all other words that inherit their forms from the parent (e.g. adjectives have the same form as the noun).
+File `grammar_pl.json` also defines what noun case should be used after prepositions - e.g. instrumental is used with 'za' (behind), but genitive with 'na lewo od' (to the left)', and the gender of used nouns - e.g. 'sześcian' (cube) is masculine, but 'kula' (ball) is feminine. These properties affect all other words that inherit their forms from the parent (e.g. adjectives have the same form as the noun).
 
 ```
 "dependent_forms": {
