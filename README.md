@@ -52,7 +52,7 @@ From the perspective of the user, the next step is the same as in original CLEVR
 
 ```bash
 cd question_generation
-python generate_questions.py
+python generate_questions_pl.py
 ```
 
 At this stage the templates with grammatical properties are transformed into questions with all tokens replaced by words in correct grammatical forms. 

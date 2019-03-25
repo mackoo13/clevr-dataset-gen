@@ -47,16 +47,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--input_scene_file', default='E:/Rzeczy/studia/wdsjn/CLEVR/CLEVR_v1.0/scenes/CLEVR_val_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
-parser.add_argument('--metadata_file', default='metadata.json',
+parser.add_argument('--metadata_file', default='metadata_pl.json',
     help="JSON file containing metadata about functions")
-parser.add_argument('--synonyms_json', default='synonyms.json',
+parser.add_argument('--synonyms_json', default='synonyms_pl.json',
     help="JSON file defining synonyms for parameter values")
-parser.add_argument('--template_dir', default='CLEVR_1.0_templates',
+parser.add_argument('--grammar_json', default='grammar_pl.json',
+    help="JSON file defining language grammar")
+parser.add_argument('--template_dir', default='CLEVR_1.0_templates_pl',
     help="Directory containing JSON templates for questions")
 
 # Output
 parser.add_argument('--output_questions_file',
-    default='../output/CLEVR_questions_en.json',
+    default='../output/CLEVR_questions.json',
     help="The output file to write containing generated questions")
 
 # Control which and how many images to process
@@ -149,7 +151,7 @@ def add_empty_filter_options(attribute_map, metadata, num_to_add):
     attr_keys = ['Size', 'Color', 'Material', 'Shape']
   else:
     assert False, 'Unrecognized dataset'
-
+  
   attr_vals = [metadata['types'][t] + [None] for t in attr_keys]
   if '_filter_options' in metadata:
     attr_vals = metadata['_filter_options']
@@ -207,13 +209,16 @@ def other_heuristic(text, param_vals):
   """
   Post-processing heuristic to handle the word "other"
   """
-  if ' other ' not in text and ' another ' not in text:
+  other_match = re.search(r'\binn\w+\b', text)
+  if not other_match:
     return text
+
+  other_word = other_match.group()
   target_keys = {
     '<Z>',  '<C>',  '<M>',  '<S>',
     '<Z2>', '<C2>', '<M2>', '<S2>',
   }
-  if param_vals.keys() != target_keys:
+  if not set(target_keys).issubset(param_vals.keys()) or '<S3>' in param_vals.keys():
     return text
   key_pairs = [
     ('<Z>', '<Z2>'),
@@ -226,22 +231,19 @@ def other_heuristic(text, param_vals):
     v1 = param_vals.get(k1, None)
     v2 = param_vals.get(k2, None)
     if v1 != '' and v2 != '' and v1 != v2:
-      print('other has got to go! %s = %s but %s = %s'
-            % (k1, v1, k2, v2))
+      print('word \'%s\' has got to go! %s = %s but %s = %s'
+            % (other_word, k1, v1, k2, v2))
       remove_other = True
       break
   if remove_other:
-    if ' other ' in text:
-      text = text.replace(' other ', ' ')
-    if ' another ' in text:
-      text = text.replace(' another ', ' a ')
+    text = text.replace(' {} '.format(other_word), ' ')
   return text
 
 
 def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
-                              synonyms, max_instances=None, verbose=False):
+                              synonyms, grammar, max_instances=None, verbose=False):
 
-  param_name_to_type = {p['name']: p['type'] for p in template['params']}
+  param_name_to_type = {p['name']: p['type'] for p in template['params']} 
 
   initial_state = {
     'nodes': [node_shallow_copy(template['nodes'][0])],
@@ -483,18 +485,113 @@ def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
     structured_questions.append(state['nodes'])
     answers.append(state['answer'])
     text = random.choice(template['text'])
-    for name, val in state['vals'].items():
-      if val in synonyms:
-        val = random.choice(synonyms[val])
-      text = text.replace(name, val)
-      text = ' '.join(text.split())
+
+    vals = []
+    forms = {}
+
+    tokens = re.findall(r'<(.*?):?([^:]*?)>', text)
+    for (name, form) in tokens:
+      if name == '':
+        continue
+      forms[name] = Form(form)
+      name_tag = '<'+name+'>'
+      if name_tag not in state['vals'].keys():
+        state['vals'][name_tag] = metadata['types'][param_name_to_type[name_tag]][0]
+
+    for name, word in state['vals'].items():
+      name = name[1:-1]
+
+      if word == '':
+        vals.append((name, ''))
+        continue
+
+      if word not in synonyms:
+        raise Exception(word + ' not found in synonyms!')
+
+      word = random.choice(synonyms[word])
+      vals.append((name, word))
+
+    failed_attempts = 0
+    while len(vals) > 0:
+      if failed_attempts > len(vals):
+        raise Exception('Infinite loop')
+
+      name, word = vals.pop(0)
+
+      form = forms[name]
+      form.eval(forms)
+      if not form.is_final():
+        vals.append((name, word))
+        failed_attempts += 1
+        continue
+      else:
+        failed_attempts = 0
+
+      text = re.sub(r'<%s:([^:]*?)>' % name, declinate(word, form, grammar), text)
+      if word in grammar['dependent_forms']:
+        forms[name].merge(Form(grammar['dependent_forms'][word]))
+
     text = replace_optionals(text)
     text = ' '.join(text.split())
     text = other_heuristic(text, state['vals'])
+    text = text[0].upper() + text[1:]
     text_questions.append(text)
 
   return text_questions, structured_questions, answers
 
+
+def declinate(word, form, grammar):
+  form_str = form.str()
+
+  if word == '':
+    return ''
+  
+  if word in grammar and form_str in grammar[word]:
+    ending = grammar[word][form_str]
+  elif form_str in grammar['regular_endings']:
+    ending = grammar['regular_endings'][form_str]
+  else:
+    # print('Warning:', word, form.str(), 'not found!')
+    return word
+  
+  ending_letters = ending.replace('-', '')
+  ending_offset = len(ending) - len(ending_letters)
+  return (word[:-ending_offset] if ending_offset > 0  else word) + ending_letters
+  
+  
+class Form:
+  def __init__(self, s):
+    self.props = {}
+    for prop in s.split(','):
+      kv = prop.split('=')
+      if len(kv) == 1:
+        kv.append('')
+      k, v = kv
+      self.props[k] = v
+
+  def str(self):
+    return ','.join([k + '=' + v for (k, v) in self.props.items()])
+
+  def eq(self, other):
+    for k, v in self.props:
+      if other.props[k] != v:
+        return False
+    return True
+
+  def merge(self, other):
+    for k in self.props:
+      if other.props[k] != '':
+        self.props[k] = other.props[k]
+
+  def eval(self, forms):
+    for k, v in self.props.items():
+      while v in forms and forms[v].props[k] != '':
+        v = forms[v].props[k]
+
+      self.props[k] = v
+
+  def is_final(self):
+    return all([v.islower() or v == '' for v in self.props.values()])
 
 
 def replace_optionals(s):
@@ -529,12 +626,12 @@ def replace_optionals(s):
 
 
 def main(args):
-  with open(args.metadata_file, 'r') as f:
+  with open(args.metadata_file, 'r', encoding='utf8') as f:
     metadata = json.load(f)
     dataset = metadata['dataset']
     if dataset != 'CLEVR-v1.0':
       raise ValueError('Unrecognized dataset "%s"' % dataset)
-
+  
   functions_by_name = {}
   for f in metadata['functions']:
     functions_by_name[f['name']] = f
@@ -593,8 +690,12 @@ def main(args):
     all_scenes = all_scenes[begin:]
 
   # Read synonyms file
-  with open(args.synonyms_json, 'r') as f:
+  with open(args.synonyms_json, 'r', encoding='utf8') as f:
     synonyms = json.load(f)
+
+  # Read grammar file
+  with open(args.grammar_json, 'r', encoding='utf8') as f:
+    grammar = json.load(f)
 
   questions = []
   scene_count = 0
@@ -627,6 +728,7 @@ def main(args):
                       metadata,
                       template_answer_counts[(fn, idx)],
                       synonyms,
+                      grammar,
                       max_instances=args.instances_per_template,
                       verbose=False)
       if args.time_dfs and args.verbose:
@@ -676,14 +778,14 @@ def main(args):
       else:
         f['value_inputs'] = []
 
-  with open(args.output_questions_file, 'w') as f:
+  with open(args.output_questions_file, 'w', encoding='utf8') as f:
     print('Writing output to %s' % args.output_questions_file)
     json.dump({
         'info': scene_info,
         'questions': questions,
       }, f)
 
-  with open('../output/raw4_en.txt', 'w', encoding='utf8') as f:
+  with open('../output/raw4.txt', 'w', encoding='utf8') as f:
     for q, tid in zip(questions, templates.keys()):
       f.write(q['question'])
       f.write('\n')

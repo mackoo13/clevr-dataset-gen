@@ -65,6 +65,25 @@ class WordInflector:
     if first_s is not None:
       self.forms['J'] = Form({'case': '', 'num': 'sg', 'gen': first_s})
 
+  def inflect_other(self):
+    words = self.t.split(' ')
+
+    found_other = False
+    for i, w in enumerate(words):
+      if is_token(w, 'O'):
+        found_other = True
+      elif w in ('rzecz', 'rzeczy') and found_other:
+        if 'O' in self.forms:
+          self.forms['O'].props['gen'] = 'f'
+        else:
+          self.forms['O'] = Form({'case': '', 'num': '', 'gen': 'f'})
+        found_other = False
+      elif not is_token(w):
+        found_other = False
+
+    self.t = ' '.join(words)
+    return self.t
+
   def inflect_which(self):
     self.t = self.t.replace('[', '')
     self.t = self.t.replace(']', '')
@@ -101,6 +120,7 @@ class WordInflector:
   def inflect_all(self):
     self.inflect_big()
     self.inflect_its()
+    self.inflect_other()
     self.inflect_which()
     return self.t
 
@@ -121,15 +141,24 @@ class FormDetector:
         self.forms[name].props['num'] = 'pl'
         words[i] = w[:-2] + '?'
 
-      if w in ('many', 'more', 'fewer', 'than'):
-        for j, w2 in enumerate(words[i+1:]):
+      applicable_tokens = []
+      if w in ('many', 'more', 'fewer', 'than') or (words[i-1], w) == ('number', 'of'):
+        for w2 in words[i+1:]:
           if w2 == 'the':
             continue
+
+          # process all tokens preceding 'things' or 'objects'
+          if w2 in ('things', 'objects'):
+            for name in applicable_tokens:
+              self.forms[name].props['num'] = 'pl'
+
           name = get_token_name(w2)
           if name is None:
             break
           if name.startswith('S') or name.startswith('O'):
             self.forms[name].props['num'] = 'pl'
+          else:
+            applicable_tokens.append(name)
 
     self.t = ' '.join(words)
 
@@ -143,19 +172,28 @@ class FormDetector:
           or (w == 'and' and self.t.startswith('Are there the same number of')) \
           or (w == 'and' and self.t.startswith('Are there an equal number of')):
 
-        for j, w2 in enumerate(words[i+1:]):
+        applicable_tokens = []
+        for w2 in words[i+1:]:
           if w2 in ('the', 'other'):
             continue
+
+          # process all tokens preceding 'things' or 'objects'
+          if w2 in ('things', 'objects'):
+            for name in applicable_tokens:
+              self.forms[name].props['num'] = 'pl'
+
           name = get_token_name(w2)
           if name is None:
             break
           if name.startswith('S') or name.startswith('O'):
             self.forms[name].props['case'] = 'gen'
+          else:
+            applicable_tokens.append(name)
 
   def add_inst(self):
     words = self.t.split(' ')
     for i, w in enumerate(words):
-      if w == 'are':
+      if w in ('are', 'either', '[either]', 'or'):
         for j, w2 in enumerate(words[i+1:]):
           name = get_token_name(w2)
           if name is None or name.startswith('R'):
@@ -247,28 +285,28 @@ class Translator:
     translations_dict = {
 
       'compare_integer': [
-        (r'\bare there the same number of', r'czy jest taka sama liczba'),
-        (r'\bare there an equal number of', r'czy jest tyle samo'),
-        (r'\bis the number of', r'czy liczba'),
-        (r'\bare there more', r'czy jest więcej'),
-        (r'\bare there fewer', r'czy jest mniej'),
+        (r'^Are there the same number of', r'Czy jest taka sama liczba'),
+        (r'^Are there an equal number of', r'Czy jest tyle samo'),
+        (r'^Is the number of', r'Czy liczba'),
+        (r'^Are there more', r'Czy jest więcej'),
+        (r'^Are there fewer', r'Czy jest mniej'),
         (r'\bgreater', r'jest większa'),
         (r'\bless', r'jest mniejsza'),
         (r'\bthan', r'niż'),
-        (r'\bis the number of (.*?) the same as the number of (.*?)\?',
-         r'czy liczba \1 jest taka sama jak liczba \2?')
+        (r'^Is the number of (.*?) the same as the number of (.*?)\?',
+         r'czy liczba \1 jest taka sama, jak liczba \2?')
       ],
       'comparison': [
-        (r'Is the (.*?) the same size as the (.*?)\?',
+        (r'^Is the (.*?) the same size as the (.*?)\?',
          r'Czy \1 jest tak samo <F>, jak \2?'),
-        (r'Are the (.*?) and the (.*?) made of the same material\?',
+        (r'^Are the (.*?) and the (.*?) made of the same material\?',
          r'Czy \1 i \2 są zrobione z tego samego materiału?'),
-        (r'Is the (.*?) made of the same material as the (.*?)\?',
+        (r'^Is the (.*?) made of the same material as the (.*?)\?',
          r'Czy \1 jest z tego samego materiału, co \2?'),
         (r'made of the same material as the',
          r'z tego samego materiału, co'),
-        (r'same as', 'jest taki sam jak'),
-        (r'Does (.*>) have the same (.*?) as',
+        (r'same as', 'jest taki sam, jak'),
+        (r'^Does (.*>) have the same (.*?) as',
          r'Czy \1 ma taki sam \2, co'),
       ],
       'one_hop': [
@@ -283,37 +321,35 @@ class Translator:
         (r'What is (.*?) made of\?',
          r'z czego jest \1?'),
         (r'<R> it\?',
-         r'<R> <I:case=R,num=S,gen=S>?'),
-        (r'<R2> it\?',
-         r'<R2> <I:case=R2,num=S,gen=S>?')
+         r'<R> <I:case=R,num=S,gen=S>?')
       ],
       'same_relate': [
         (r'(?:How many|What number of) other (.*?) have the same',
-         r'Ile \1 ma ten sam'),
+         r'Ile innych \1 ma ten sam'),
         (r'(?:How many|What number of) other (.*?) are(?: there of)? the same',
-         r'Ile \1 ma ten sam'),
+         r'Ile innych \1 ma ten sam'),
         (r'How many other (.*?) are made of the same material as the (.*?)\?',
-         r'Ile \1 jest zrobione z tego samego materiału, co \2?'),
+         r'Ile innych \1 jest zrobione z tego samego materiału, co \2?'),
         (r'What number of other (.*?) are made of the same material as the (.*?)\?',
-         r'Ile \1 jest zrobione z tego samego materiału, co \2?'),
+         r'Ile innych \1 jest zrobione z tego samego materiału, co \2?'),
 
-        (r'Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
+        (r'^Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
          r'Czy jest coś, co ma ten sam \1, co \2?'),
-        (r'Is there (?:any other thing|anything else) of the same color as the (.*?)\?',
+        (r'^Is there (?:any other thing|anything else) of the same color as the (.*?)\?',
          r'Czy jest coś tego samego koloru, co \1?'),
-        (r'Is there another (.*?) that (?:has|is) the same (.*?) as the (.*?)\?',
+        (r'^Is there another (.*?) that (?:has|is) the same (.*?) as the (.*?)\?',
          r'Czy jest <O> \1, <W> ma ten sam \2, co \3?'),
-        (r'Are there any other things that have the same (.*?) as the (.*?)\?',
+        (r'^Are there any other things that have the same (.*?) as the (.*?)\?',
          r'Czy są inne rzeczy, które mają ten sam \1, co \2?'),
-        (r'Are there any other (.*?) that have the same (.*?) as the (.*?)\?',
-         r'Czy są jakieś \1, <W> mają ten sam \2, co \3?'),
+        (r'^Are there any other (.*?) that have the same (.*?) as the (.*?)\?',
+         r'Czy są jakieś inne \1, <W> mają ten sam \2, co \3?'),
 
-        (r'\bis there another', 'czy jest <O>'),
-        (r'\bare there any other things that', 'czy jest coś, co'),
-        (r'\bis there anything else that', 'czy jest coś, co'),
-        (r'\bis there any other thing that', 'czy jest coś, co'),
+        (r'^Is there another', 'czy jest <O>'),
+        (r'^Are there any other things that', 'czy jest coś innego, co'),
+        (r'^Is there anything else that', 'czy jest coś innego, co'),
+        (r'^Is there any other thing that', 'czy jest coś innego, co'),
 
-        (r'\bthere is another', 'na obrazku jest drugi')
+        (r'\bthere is another', 'na obrazku jest <O>')
       ],
       'single_and': [
         (r'\bboth\b', ''),
@@ -329,14 +365,15 @@ class Translator:
         (r'(?:How many|What number of) (.*?) objects are', r'ile \1 obiektów jest'),
         (r'(?:How many|What number of) (.*?) are', r'ile \1 jest'),
       ],
-      # 'three_hop': [],
+      'three_hop': [(r'<R3> it\?', r'<R3> <I:case=R2,num=S,gen=S>?')],
       'two_hop': [
         (r'\bthere is a\b', r'na obrazku jest'),
         (r'The (.*?) that is <R2> the (.*?) that is <R> the (.*?) is made of what material?',
-         r'Z jakiego materiału jest \1, <W2> jest <R2> \2, <W> jest <R> \3?')
+         r'Z jakiego materiału jest \1, <W2> jest <R2> \2, <W> jest <R> \3?'),
+        (r'<R2> it\?', r'<R2> <I:case=R2,num=S,gen=S>?')
       ],
       'zero_hop': [
-        (r'\bare there any other\b', 'czy są jakieś'),
+        (r'\bare there any other\b', 'czy są jakieś inne'),
         (r'\bare there any\b', 'czy są jakieś'),
         (r'\bis there a\b', 'czy [na obrazku] jest '),
         (r'\bhow big is it', '<H:case=F,num=F,gen=F> jest <F>'),
@@ -356,17 +393,17 @@ class Translator:
         (r'is it the same (.*?) as', r'czy ma ten sam \1, co'),
         (r'is its (.*?) the same as', r'czy ma ten sam \1, co'),
         (r'(.*?) is what (.*?)\?', r'Jakiego \2u jest \1?'),
-        (r'(.*?) has what (.*?)\?', r'Jaki \1 ma \2?'),
+        (r'(.*?) has what (.*?)\?', r'Jaki \2 ma \1?'),
         (r'of the same (.*?) as the', r'tego samego \1u, co'),
         (r'that is the same (.*?) as the', r'<W> jest tego samego \1u, co'),
         (r'the same (.*?) as the', r'tego samego \1u, co'),
-        (r'what is its (.*?)', r'jaki jest <J:case=,num=sg,gen=S2> \1'),
-        (r'what is the (.*?) of the other', r'jaki jest \1 innego'),
-        (r'what is the (.*?) of', r'jaki jest \1'),
-        (r'what (.*?) is it', r'jaki ma \1'),
-        (r'what (.*?) is', r'jakiego \1u jest'),
-        (r'what (.*?) is the other', r'jaki \1 ma inny'),
-        (r'Is the (.*?) of', r'Czy \1'),
+        (r'what is its (\w+)', r'jaki jest <J> \1'),
+        (r'what is the (\w+) of the other', r'jaki jest \1 <O>'),
+        (r'what is the (\w+) of', r'jaki jest \1'),
+        (r'what (\w+) is it', r'jaki ma \1'),
+        (r'what (\w+) is', r'jakiego \1u jest'),
+        (r'what (\w+) is the other', r'jaki \1 ma <O>'),
+        (r'^Is the (.*?) of', r'Czy \1'),
 
         (r'Do the (.*?) and the (.*?) have the same (.*?)\?',
          r'Czy \1 i \2 mają ten sam \3?'),
@@ -441,7 +478,7 @@ class Translator:
     t = re.sub(' {2}', ' ', t)
     t = re.sub(';', ' -', t)
     t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
-    t = re.sub(r'(?<!,) (<W|niż|co)', r', \1', t)
+    t = re.sub(r'(?<!,) (<W|niż\b|co\b)', r', \1', t)
 
     return t, new_params
 
@@ -465,7 +502,6 @@ def main(args):
       texts = []
       new_params_all = set()
       for i, t in enumerate(v['text']):
-
         translated, new_params = translator.translate(t)
         texts.append(translated)
         new_params_all.update(new_params)
