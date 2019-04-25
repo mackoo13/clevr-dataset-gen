@@ -2,12 +2,8 @@
 
 The project is described in an article:
 
-**Automatic translation of the CLEVR dataset into Polish**
-
-Maciej Kocot, Aleksander Smywiński-Pohl
-
-AGH University of Science and Technology
-
+**Automatic translation of the CLEVR dataset into Polish**<br>
+Maciej Kocot, Aleksander Smywiński-Pohl (AGH University of Science and Technology)<br>
 To be presented at [LTC 2019](http://ltc.amu.edu.pl/)
 
 ## Overview
