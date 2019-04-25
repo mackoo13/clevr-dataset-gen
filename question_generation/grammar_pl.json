@@ -74,6 +74,12 @@
 	"case=gen,num=sg,gen=m": "ego",
 	"case=gen,num=sg,gen=f": "ej"
   },
+  "wielki": {
+	"case=nom,num=pl,gen=m": "e",
+	"case=nom,num=pl,gen=f": "e",
+	"case=gen,num=sg,gen=m": "ego",
+	"case=gen,num=sg,gen=f": "ej"
+  },
   "regular_endings": {
 	"case=nom,num=sg,gen=m": "",
 	"case=nom,num=sg,gen=f": "-a",
