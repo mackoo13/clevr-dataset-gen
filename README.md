@@ -1,5 +1,17 @@
 # CLEVR Dataset Generation for Polish Language 
 
+The project is described in an article:
+
+**Automatic translation of the CLEVR dataset into Polish**
+
+Maciej Kocot, Aleksander Smywiński-Pohl
+
+AGH University of Science and Technology
+
+To be presented at [LTC 2019](http://ltc.amu.edu.pl/)
+
+## Overview
+
 This code is an extension of an existing project: [CLEVR](https://github.com/facebookresearch/clevr-dataset-gen). See the project website and original Readme for details. It generates questions about images with some objects arranged in different layouts.
 
 #### Examples of output:
