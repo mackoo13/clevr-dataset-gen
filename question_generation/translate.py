@@ -11,6 +11,7 @@ param_types = {'D': 'Made',
                'O': 'Other',
                'W': 'Which'}
 
+
 class Form:
   def __init__(self, props):
     self.props = props
@@ -40,6 +41,7 @@ class Form:
 
   def is_final(self):
     return all([v.islower() or v == '' for v in self.props.values()])
+
 
 class WordInflector:
   def __init__(self, t, forms):
@@ -124,6 +126,7 @@ class WordInflector:
     self.inflect_which()
     return self.t
 
+
 class FormDetector:
   def __init__(self, t, forms):
     self.t = t
@@ -185,10 +188,9 @@ class FormDetector:
           name = get_token_name(w2)
           if name is None:
             break
-          if name.startswith('S') or name.startswith('O'):
-            self.forms[name].props['case'] = 'gen'
-          else:
-            applicable_tokens.append(name)
+
+          self.forms[name].props['case'] = 'gen'
+          applicable_tokens.append(name)
 
   def add_inst(self):
     words = self.t.split(' ')
@@ -225,12 +227,13 @@ class FormDetector:
       elif w not in ['the'] and not is_token(w):
         last_r = None
 
-  def propagate_forms_s_o(self):
+  def propagate_forms_s_od(self):
     words = self.t.split(' ')
     for i, w in enumerate(words):
       if is_token(w, 'S'):
         s_name = get_token_name(w)
         self.forms['O'] = Form({'case': s_name, 'num': s_name, 'gen': s_name})
+        self.forms['D'] = Form({'case': s_name, 'num': s_name, 'gen': s_name})
         return
 
   def add_all(self):
@@ -239,7 +242,7 @@ class FormDetector:
     self.add_inst()
     self.propagate_forms()
     self.propagate_forms_r_s()
-    self.propagate_forms_s_o()
+    self.propagate_forms_s_od()
     return self.t
 
 
@@ -290,9 +293,9 @@ class Translator:
         (r'^Is the number of', r'Czy liczba'),
         (r'^Are there more', r'Czy jest więcej'),
         (r'^Are there fewer', r'Czy jest mniej'),
-        (r'\bgreater', r'jest większa'),
-        (r'\bless', r'jest mniejsza'),
-        (r'\bthan', r'niż'),
+        (r'\bgreater\b', r'jest większa'),
+        (r'\bless\b', r'jest mniejsza'),
+        (r'\bthan\b', r'niż'),
         (r'^Is the number of (.*?) the same as the number of (.*?)\?',
          r'czy liczba \1 jest taka sama, jak liczba \2?')
       ],
@@ -302,45 +305,41 @@ class Translator:
         (r'^Are the (.*?) and the (.*?) made of the same material\?',
          r'Czy \1 i \2 są zrobione z tego samego materiału?'),
         (r'^Is the (.*?) made of the same material as the (.*?)\?',
-         r'Czy \1 jest z tego samego materiału, co \2?'),
+         r'^Czy \1 jest z tego samego materiału, co \2?'),
         (r'made of the same material as the',
-         r'z tego samego materiału, co'),
+         r'\bz tego samego materiału, co\b'),
         (r'same as', 'jest taki sam, jak'),
         (r'^Does (.*>) have the same (.*?) as',
          r'Czy \1 ma taki sam \2, co'),
       ],
       'one_hop': [
-        (r'There is a (.*?); what number of (.*?) are (.*?) it\?',
+        (r'^There is a (.*?); (?:how many|what number of) (.*?) are (.*?) it\?',
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-        (r'There is a (.*?); how many (.*?) are (.*?) it\?',
-         r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
-        (r'What number of (.*?) are (.*?) the (.*?)\?',
+        (r'^What number of (.*?) are (.*?) the (.*?)\?',
          r'Ile \1 jest \2 \3?'),
-        (r'; what material is it made of\?',
+        (r'; what (material )?is it made of\?',
          r'. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
-        (r'What is (.*?) made of\?',
-         r'z czego jest \1?'),
+        (r'^What is (.*?) made of\?',
+         r'z czego jest <D> \1?'),
+        (r'^What material is (.*?) made of\?',
+         r'z czego jest <D> \1?'),
         (r'<R> it\?',
          r'<R> <I:case=R,num=S,gen=S>?')
       ],
       'same_relate': [
-        (r'(?:How many|What number of) other (.*?) have the same',
+        (r'^(?:How many|What number of) other (.*?) have the same',
          r'Ile innych \1 ma ten sam'),
-        (r'(?:How many|What number of) other (.*?) are(?: there of)? the same',
+        (r'^(?:How many|What number of) other (.*?) are(?: there of)? the same',
          r'Ile innych \1 ma ten sam'),
-        (r'How many other (.*?) are made of the same material as the (.*?)\?',
-         r'Ile innych \1 jest zrobione z tego samego materiału, co \2?'),
-        (r'What number of other (.*?) are made of the same material as the (.*?)\?',
+        (r'^(?:How many|What number of) other (.*?) are made of the same material as the (.*?)\?',
          r'Ile innych \1 jest zrobione z tego samego materiału, co \2?'),
 
-        (r'^Is there (?:any other thing|anything else) that has the same (.*?) as the (.*?)\?',
+        (r'^Is there (?:any other thing|anything else) that (?:has|is) the same (.*?) as the (.*?)\?',
          r'Czy jest coś, co ma ten sam \1, co \2?'),
         (r'^Is there (?:any other thing|anything else) of the same color as the (.*?)\?',
          r'Czy jest coś tego samego koloru, co \1?'),
         (r'^Is there another (.*?) that (?:has|is) the same (.*?) as the (.*?)\?',
          r'Czy jest <O> \1, <W> ma ten sam \2, co \3?'),
-        (r'^Are there any other things that have the same (.*?) as the (.*?)\?',
-         r'Czy są inne rzeczy, które mają ten sam \1, co \2?'),
         (r'^Are there any other (.*?) that have the same (.*?) as the (.*?)\?',
          r'Czy są jakieś inne \1, <W> mają ten sam \2, co \3?'),
 
@@ -353,17 +352,19 @@ class Translator:
       ],
       'single_and': [
         (r'\bboth\b', ''),
-        (r'The (.*?) that is both <R2> the (.*?) and <R> the (.*?) is made of what material\?',
+        (r'^The (.*?) that is both <R2> the (.*?) and <R> the (.*?) is made of what material\?',
          r'Z jakiego materiału jest \1, <W> jest <R2> \2 i <R> \3?')
       ],
       'single_or': [
         (r'\beither\b', 'albo'),
         (r'\bor\b', 'albo'),
 
-        (r'(?:How many|What number of) (.*?) things are',
+        (r'^(?:How many|What number of) (.*?) things are',
          r'ile \1 rzeczy jest'),
-        (r'(?:How many|What number of) (.*?) objects are', r'ile \1 obiektów jest'),
-        (r'(?:How many|What number of) (.*?) are', r'ile \1 jest'),
+        (r'^(?:How many|What number of) (.*?) objects are',
+         r'ile \1 obiektów jest'),
+        (r'^(?:How many|What number of) (.*?) are',
+         r'ile \1 jest'),
       ],
       'three_hop': [(r'<R3> it\?', r'<R3> <I:case=R2,num=S,gen=S>?')],
       'two_hop': [
@@ -427,9 +428,7 @@ class Translator:
         (r'\bmaterial\b', 'materiał'),
         (r'\bmaterialu\b', 'materiału'),
         (r'\bas\b', 'co'),
-        (r'\bis\b', 'jest'),
-
-        (r'it\?', '?')
+        (r'\bis\b', 'jest')
       ]
     }
 
