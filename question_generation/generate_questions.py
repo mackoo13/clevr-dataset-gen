@@ -41,10 +41,11 @@ us to efficiently prune the search space and terminate early when we know that
 """
 
 
+
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='E:/Rzeczy/studia/wdsjn/CLEVR/CLEVR_v1.0/scenes/CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='../output/CLEVR_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata.json',
@@ -56,21 +57,21 @@ parser.add_argument('--template_dir', default='CLEVR_1.0_templates',
 
 # Output
 parser.add_argument('--output_questions_file',
-    default='../output/CLEVR_questions_en.json',
+    default='../output/CLEVR_questions.json',
     help="The output file to write containing generated questions")
 
 # Control which and how many images to process
-parser.add_argument('--scene_start_idx', default=42, type=int,
+parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=50, type=int,
+parser.add_argument('--num_scenes', default=0, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
 
 # Control the number of questions per image; we will attempt to generate
 # templates_per_image * instances_per_template questions per image.
-parser.add_argument('--templates_per_image', default=50, type=int,
+parser.add_argument('--templates_per_image', default=10, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
 parser.add_argument('--instances_per_template', default=1, type=int,
@@ -682,11 +683,6 @@ def main(args):
         'info': scene_info,
         'questions': questions,
       }, f)
-
-  with open('../output/raw4_en.txt', 'w', encoding='utf8') as f:
-    for q, tid in zip(questions, templates.keys()):
-      f.write(q['question'])
-      f.write('\n')
 
 
 if __name__ == '__main__':

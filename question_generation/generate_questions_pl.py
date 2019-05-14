@@ -44,7 +44,7 @@ us to efficiently prune the search space and terminate early when we know that
 parser = argparse.ArgumentParser()
 
 # Inputs
-parser.add_argument('--input_scene_file', default='E:/Rzeczy/studia/wdsjn/CLEVR/CLEVR_v1.0/scenes/CLEVR_val_scenes.json',
+parser.add_argument('--input_scene_file', default='../output/CLEVR_scenes.json',
     help="JSON file containing ground-truth scene information for all images " +
          "from render_images.py")
 parser.add_argument('--metadata_file', default='metadata_pl.json',
@@ -58,24 +58,24 @@ parser.add_argument('--template_dir', default='CLEVR_1.0_templates_pl',
 
 # Output
 parser.add_argument('--output_questions_file',
-    default='../output/CLEVR_questions.json',
+    default='../output/CLEVR_questions_pl.json',
     help="The output file to write containing generated questions")
 
 # Control which and how many images to process
-parser.add_argument('--scene_start_idx', default=500, type=int,
+parser.add_argument('--scene_start_idx', default=0, type=int,
     help="The image at which to start generating questions; this allows " +
          "question generation to be split across many workers")
-parser.add_argument('--num_scenes', default=5, type=int,
+parser.add_argument('--num_scenes', default=0, type=int,
     help="The number of images for which to generate questions. Setting to 0 " +
          "generates questions for all scenes in the input file starting from " +
          "--scene_start_idx")
 
 # Control the number of questions per image; we will attempt to generate
 # templates_per_image * instances_per_template questions per image.
-parser.add_argument('--templates_per_image', default=50, type=int,
+parser.add_argument('--templates_per_image', default=10, type=int,
     help="The number of different templates that should be instantiated " +
          "on each image")
-parser.add_argument('--instances_per_template', default=2, type=int,
+parser.add_argument('--instances_per_template', default=1, type=int,
     help="The number of times each template should be instantiated on an image")
 
 # Misc
@@ -151,7 +151,7 @@ def add_empty_filter_options(attribute_map, metadata, num_to_add):
     attr_keys = ['Size', 'Color', 'Material', 'Shape']
   else:
     assert False, 'Unrecognized dataset'
-  
+
   attr_vals = [metadata['types'][t] + [None] for t in attr_keys]
   if '_filter_options' in metadata:
     attr_vals = metadata['_filter_options']
@@ -212,8 +212,8 @@ def other_heuristic(text, param_vals):
   other_match = re.search(r'\binn\w+\b', text)
   if not other_match:
     return text
-
   other_word = other_match.group()
+
   target_keys = {
     '<Z>',  '<C>',  '<M>',  '<S>',
     '<Z2>', '<C2>', '<M2>', '<S2>',
@@ -243,7 +243,7 @@ def other_heuristic(text, param_vals):
 def instantiate_templates_dfs(scene_struct, template, metadata, answer_counts,
                               synonyms, grammar, max_instances=None, verbose=False):
 
-  param_name_to_type = {p['name']: p['type'] for p in template['params']} 
+  param_name_to_type = {p['name']: p['type'] for p in template['params']}
 
   initial_state = {
     'nodes': [node_shallow_copy(template['nodes'][0])],
@@ -631,7 +631,7 @@ def main(args):
     dataset = metadata['dataset']
     if dataset != 'CLEVR-v1.0':
       raise ValueError('Unrecognized dataset "%s"' % dataset)
-  
+
   functions_by_name = {}
   for f in metadata['functions']:
     functions_by_name[f['name']] = f
@@ -784,11 +784,6 @@ def main(args):
         'info': scene_info,
         'questions': questions,
       }, f)
-
-  with open('../output/raw5.txt', 'w', encoding='utf8') as f:
-    for q, tid in zip(questions, templates.keys()):
-      f.write(q['question'])
-      f.write('\n')
 
 
 if __name__ == '__main__':

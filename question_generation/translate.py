@@ -305,23 +305,23 @@ class Translator:
         (r'^Are the (.*?) and the (.*?) made of the same material\?',
          r'Czy \1 i \2 są zrobione z tego samego materiału?'),
         (r'^Is the (.*?) made of the same material as the (.*?)\?',
-         r'^Czy \1 jest z tego samego materiału, co \2?'),
+         r'Czy \1 jest z tego samego materiału, co \2?'),
         (r'made of the same material as the',
-         r'\bz tego samego materiału, co\b'),
+         r'z tego samego materiału, co'),
         (r'same as', 'jest taki sam, jak'),
         (r'^Does (.*>) have the same (.*?) as',
          r'Czy \1 ma taki sam \2, co'),
+        (r'^Is (.*>) the same (.*?) as',
+         r'Czy \1 jest tego samego \2u, co'),
       ],
       'one_hop': [
         (r'^There is a (.*?); (?:how many|what number of) (.*?) are (.*?) it\?',
          r'Na obrazku jest \1. Ile \2 jest \3 <I:case=R,num=sg,gen=S>?'),
         (r'^What number of (.*?) are (.*?) the (.*?)\?',
          r'Ile \1 jest \2 \3?'),
-        (r'; what (material )?is it made of\?',
+        (r'; what (?:material )?is it made of\?',
          r'. Z jakiego materiału jest <D:case=nom,num=sg,gen=S>?'),
-        (r'^What is (.*?) made of\?',
-         r'z czego jest <D> \1?'),
-        (r'^What material is (.*?) made of\?',
+        (r'^What (?:material )?is (.*?) made of\?',
          r'z czego jest <D> \1?'),
         (r'<R> it\?',
          r'<R> <I:case=R,num=S,gen=S>?')
@@ -341,7 +341,7 @@ class Translator:
         (r'^Is there another (.*?) that (?:has|is) the same (.*?) as the (.*?)\?',
          r'Czy jest <O> \1, <W> ma ten sam \2, co \3?'),
         (r'^Are there any other (.*?) that have the same (.*?) as the (.*?)\?',
-         r'Czy są jakieś inne \1, <W> mają ten sam \2, co \3?'),
+         r'Czy są jakieś inne \1, które mają ten sam \2, co \3?'),
 
         (r'^Is there another', 'czy jest <O>'),
         (r'^Are there any other things that', 'czy jest coś innego, co'),
@@ -474,7 +474,7 @@ class Translator:
 
     t = re.sub(r'^ ', '', t)
     t = re.sub(' \?', '?', t)
-    t = re.sub(' {2}', ' ', t)
+    t = re.sub(' +', ' ', t)
     t = re.sub(';', ' -', t)
     t = re.sub(r'^Jakiego materiału', 'Z jakiego materiału', t)
     t = re.sub(r'(?<!,) (<W|niż\b|co\b)', r', \1', t)
